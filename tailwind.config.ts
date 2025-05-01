@@ -1,3 +1,4 @@
+
 import type { Config } from "tailwindcss";
 
 export default {
@@ -61,6 +62,15 @@ export default {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				// Custom CodeChatter colors
+				codechatter: {
+					dark: "#121212",
+					darker: "#1A1F2C",
+					blue: "#0EA5E9",
+					purple: "#8B5CF6",
+					"neon-green": "#10FFA2",
+					"neon-pink": "#F471B5",
 				}
 			},
 			borderRadius: {
@@ -84,11 +94,30 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'code-rain': {
+					'0%': { transform: 'translateY(-100%)' },
+					'100%': { transform: 'translateY(1000%)' }
+				},
+				'glow': {
+					'0%, 100%': { opacity: '1' },
+					'50%': { opacity: '0.7' }
+				},
+				'float': {
+					'0%, 100%': { transform: 'translateY(0px)' },
+					'50%': { transform: 'translateY(-10px)' }
 				}
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
-				'accordion-up': 'accordion-up 0.2s ease-out'
+				'accordion-up': 'accordion-up 0.2s ease-out',
+				'code-rain': 'code-rain 30s linear infinite',
+				'glow': 'glow 2s ease-in-out infinite',
+				'float': 'float 3s ease-in-out infinite'
+			},
+			backgroundImage: {
+				'gradient-radial': 'radial-gradient(var(--tw-gradient-stops))',
+				'circuit': "url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMCIgaGVpZ2h0PSIzMCI+CiAgPHBhdGggZD0iTSAxNSw1IEwgMjUsMTUgTCAxNSwyNSBMIDUsMTUgeiIgc3Ryb2tlPSIjMEVBNUU5MjAiIGZpbGw9Im5vbmUiLz4KPC9zdmc+Cg==')",
 			}
 		}
 	},
