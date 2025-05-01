@@ -1,9 +1,10 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Code, Home, BookOpen, MessageSquare, Users, Award, Settings, ChevronLeft, ChevronRight, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import SearchProblem from './SearchProblem';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -13,6 +14,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
   const location = useLocation();
   const currentPath = location.pathname;
+  const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   
   const menuItems = [
     {
@@ -77,10 +79,16 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
         <div className="px-3">
           <Button
             className="w-full mb-4 bg-gradient-to-r from-codechatter-blue to-codechatter-purple hover:opacity-90"
+            onClick={() => setIsSearchDialogOpen(true)}
           >
             <Code size={collapsed ? 18 : 16} />
             {!collapsed && <span className="ml-2">New Challenge</span>}
           </Button>
+          
+          <SearchProblem 
+            open={isSearchDialogOpen} 
+            onOpenChange={setIsSearchDialogOpen} 
+          />
         </div>
         <div className="space-y-1 px-3">
           {menuItems.map((item, index) => {
