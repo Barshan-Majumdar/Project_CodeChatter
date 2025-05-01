@@ -1,11 +1,12 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar } from '@/components/ui/avatar';
 import { Check, X, UserPlus, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { useToast } from '@/hooks/use-toast';
 
 interface ConnectionRequest {
   id: string;
@@ -15,6 +16,7 @@ interface ConnectionRequest {
   problemsSolved: number;
   mutualConnections: number;
   avatar?: string;
+  status: 'pending' | 'accepted' | 'rejected';
 }
 
 interface Suggestion {
@@ -25,25 +27,28 @@ interface Suggestion {
   problemsSolved: number;
   specialties: string[];
   avatar?: string;
+  status: 'none' | 'pending' | 'connected';
 }
 
 const Network: React.FC = () => {
-  const [searchQuery, setSearchQuery] = React.useState('');
+  const { toast } = useToast();
+  const [searchQuery, setSearchQuery] = useState('');
   
-  const connectionRequests: ConnectionRequest[] = [
-    { id: '1', name: 'Emily Johnson', title: 'Front-end Developer', points: 450, problemsSolved: 42, mutualConnections: 3 },
-    { id: '2', name: 'Ryan Lee', title: 'Software Engineer at TechCorp', points: 780, problemsSolved: 67, mutualConnections: 5 },
-    { id: '3', name: 'Sophia Garcia', title: 'Computer Science Student', points: 320, problemsSolved: 28, mutualConnections: 2 },
-  ];
+  const [connectionRequests, setConnectionRequests] = useState<ConnectionRequest[]>([
+    { id: '1', name: 'Emily Johnson', title: 'Front-end Developer', points: 450, problemsSolved: 42, mutualConnections: 3, status: 'pending' },
+    { id: '2', name: 'Ryan Lee', title: 'Software Engineer at TechCorp', points: 780, problemsSolved: 67, mutualConnections: 5, status: 'pending' },
+    { id: '3', name: 'Sophia Garcia', title: 'Computer Science Student', points: 320, problemsSolved: 28, mutualConnections: 2, status: 'pending' },
+  ]);
   
-  const suggestions: Suggestion[] = [
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([
     { 
       id: '4', 
       name: 'Daniel Wilson', 
       title: 'Full Stack Developer', 
       points: 1200, 
       problemsSolved: 98, 
-      specialties: ['React', 'Node.js', 'Algorithms'] 
+      specialties: ['React', 'Node.js', 'Algorithms'],
+      status: 'none'
     },
     { 
       id: '5', 
@@ -51,7 +56,8 @@ const Network: React.FC = () => {
       title: 'Machine Learning Engineer', 
       points: 950, 
       problemsSolved: 73, 
-      specialties: ['Python', 'Data Structures', 'Neural Networks'] 
+      specialties: ['Python', 'Data Structures', 'Neural Networks'],
+      status: 'none'
     },
     { 
       id: '6', 
@@ -59,7 +65,8 @@ const Network: React.FC = () => {
       title: 'Competitive Programmer', 
       points: 1450, 
       problemsSolved: 110, 
-      specialties: ['C++', 'Dynamic Programming', 'Graphs'] 
+      specialties: ['C++', 'Dynamic Programming', 'Graphs'],
+      status: 'none'
     },
     { 
       id: '7', 
@@ -67,9 +74,61 @@ const Network: React.FC = () => {
       title: 'Backend Developer', 
       points: 870, 
       problemsSolved: 64, 
-      specialties: ['Java', 'Database Design', 'System Design'] 
+      specialties: ['Java', 'Database Design', 'System Design'],
+      status: 'none'
     },
-  ];
+  ]);
+
+  const handleConnect = (suggestionId: string) => {
+    setSuggestions(suggestions.map(suggestion => 
+      suggestion.id === suggestionId 
+        ? { ...suggestion, status: 'pending' } 
+        : suggestion
+    ));
+    
+    toast({
+      title: "Connection Request Sent",
+      description: "Your connection request has been sent successfully.",
+    });
+  };
+
+  const handleAcceptRequest = (requestId: string) => {
+    // Update the request status
+    setConnectionRequests(connectionRequests.map(request => 
+      request.id === requestId 
+        ? { ...request, status: 'accepted' }
+        : request
+    ));
+    
+    toast({
+      title: "Connection Accepted",
+      description: "You are now connected with this user.",
+    });
+    
+    // Remove the accepted request after a short delay
+    setTimeout(() => {
+      setConnectionRequests(connectionRequests.filter(request => request.id !== requestId));
+    }, 2000);
+  };
+
+  const handleDeclineRequest = (requestId: string) => {
+    // Update the request status
+    setConnectionRequests(connectionRequests.map(request => 
+      request.id === requestId 
+        ? { ...request, status: 'rejected' }
+        : request
+    ));
+    
+    toast({
+      title: "Connection Declined",
+      description: "The connection request has been declined.",
+    });
+    
+    // Remove the declined request after a short delay
+    setTimeout(() => {
+      setConnectionRequests(connectionRequests.filter(request => request.id !== requestId));
+    }, 2000);
+  };
 
   const filteredSuggestions = suggestions.filter(suggestion => 
     suggestion.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -99,7 +158,12 @@ const Network: React.FC = () => {
               ) : (
                 <div className="space-y-4">
                   {connectionRequests.map(request => (
-                    <div key={request.id} className="flex items-center justify-between p-3 bg-codechatter-darker rounded-lg">
+                    <div 
+                      key={request.id} 
+                      className={`flex items-center justify-between p-3 bg-codechatter-darker rounded-lg transition-opacity duration-300 ${
+                        request.status !== 'pending' ? 'opacity-70' : ''
+                      }`}
+                    >
                       <div className="flex items-center">
                         <Avatar className="h-12 w-12 mr-4">
                           <div className="bg-gradient-to-br from-codechatter-blue to-codechatter-purple w-full h-full flex items-center justify-center text-white font-medium">
@@ -117,19 +181,29 @@ const Network: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="border-red-500/30 hover:border-red-500/60 hover:bg-red-500/10 text-red-400"
-                        >
-                          <X size={16} className="mr-1" /> Decline
-                        </Button>
-                        <Button 
-                          size="sm" 
-                          className="bg-gradient-to-r from-codechatter-blue to-codechatter-purple hover:opacity-90"
-                        >
-                          <Check size={16} className="mr-1" /> Accept
-                        </Button>
+                        {request.status === 'pending' ? (
+                          <>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              className="border-red-500/30 hover:border-red-500/60 hover:bg-red-500/10 text-red-400"
+                              onClick={() => handleDeclineRequest(request.id)}
+                            >
+                              <X size={16} className="mr-1" /> Decline
+                            </Button>
+                            <Button 
+                              size="sm" 
+                              className="bg-gradient-to-r from-codechatter-blue to-codechatter-purple hover:opacity-90"
+                              onClick={() => handleAcceptRequest(request.id)}
+                            >
+                              <Check size={16} className="mr-1" /> Accept
+                            </Button>
+                          </>
+                        ) : request.status === 'accepted' ? (
+                          <Badge className="bg-green-500/20 text-green-400">Accepted</Badge>
+                        ) : (
+                          <Badge className="bg-red-500/20 text-red-400">Declined</Badge>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -188,13 +262,36 @@ const Network: React.FC = () => {
                               </Badge>
                             ))}
                           </div>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="w-full border-codechatter-blue/30 text-codechatter-blue hover:bg-codechatter-blue/10"
-                          >
-                            <UserPlus size={16} className="mr-1" /> Connect
-                          </Button>
+                          {suggestion.status === 'none' && (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="w-full border-codechatter-blue/30 text-codechatter-blue hover:bg-codechatter-blue/10"
+                              onClick={() => handleConnect(suggestion.id)}
+                            >
+                              <UserPlus size={16} className="mr-1" /> Connect
+                            </Button>
+                          )}
+                          {suggestion.status === 'pending' && (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="w-full border-codechatter-purple/30 text-codechatter-purple hover:bg-codechatter-purple/10"
+                              disabled
+                            >
+                              Request Pending
+                            </Button>
+                          )}
+                          {suggestion.status === 'connected' && (
+                            <Button 
+                              size="sm" 
+                              variant="outline" 
+                              className="w-full border-green-500/30 text-green-400 hover:bg-green-500/10"
+                              disabled
+                            >
+                              Connected
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </div>

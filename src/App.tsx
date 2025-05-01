@@ -8,12 +8,14 @@ import Index from "./pages/Index";
 import Features from "./pages/Features";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Problems from "./pages/dashboard/Problems";
 import DashboardChat from "./pages/dashboard/Chat";
 import Network from "./pages/dashboard/Network";
 import Leaderboard from "./pages/dashboard/Leaderboard";
 import Home from "./pages/dashboard/Home";
+import Settings from "./pages/dashboard/Settings";
 import NotFound from "./pages/NotFound";
 import DashboardLayout from "./layouts/DashboardLayout";
 
@@ -30,6 +32,7 @@ const App = () => (
           <Route path="/features" element={<Features />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="problems" element={<Problems />} />
@@ -37,6 +40,7 @@ const App = () => (
             <Route path="network" element={<Network />} />
             <Route path="leaderboard" element={<Leaderboard />} />
             <Route path="home" element={<Home />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
