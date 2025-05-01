@@ -1,10 +1,9 @@
 
 import React from 'react';
-import { Link } from 'react-router-dom';
-import { 
-  Code, Home, Users, MessageSquare, Star, 
-} from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Code, Home, BookOpen, MessageSquare, Users, Award, Settings, ChevronLeft, ChevronRight, Bell } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -12,86 +11,116 @@ interface SidebarProps {
 }
 
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
+  const location = useLocation();
+  const currentPath = location.pathname;
+  
   const menuItems = [
-    { icon: Home, label: 'Home', path: '/dashboard' },
-    { icon: Code, label: 'Problems', path: '/dashboard/problems' },
-    { icon: MessageSquare, label: 'Chat', path: '/dashboard/chat' },
-    { icon: Users, label: 'Network', path: '/dashboard/network' },
-    { icon: Star, label: 'Leaderboard', path: '/dashboard/leaderboard' },
+    {
+      icon: Home,
+      label: 'Home',
+      path: '/dashboard/home'
+    },
+    {
+      icon: BookOpen,
+      label: 'Problems',
+      path: '/dashboard/problems'
+    },
+    {
+      icon: MessageSquare,
+      label: 'Chat',
+      path: '/dashboard/chat'
+    },
+    {
+      icon: Users,
+      label: 'Network',
+      path: '/dashboard/network'
+    },
+    {
+      icon: Award,
+      label: 'Leaderboard',
+      path: '/dashboard/leaderboard'
+    },
+    {
+      icon: Settings,
+      label: 'Settings',
+      path: '/dashboard/settings'
+    },
   ];
 
   return (
-    <div className={`h-screen bg-codechatter-dark border-r border-codechatter-blue/20 transition-all duration-300 flex flex-col ${collapsed ? 'w-16' : 'w-64'}`}>
-      <div className="p-4 flex items-center justify-between border-b border-codechatter-blue/20">
+    <div
+      className={cn(
+        'h-screen bg-codechatter-dark border-r border-codechatter-blue/20 transition-all duration-300 flex flex-col',
+        collapsed ? 'w-[70px]' : 'w-[240px]'
+      )}
+    >
+      {/* Sidebar Header */}
+      <div className="flex items-center p-4 border-b border-codechatter-blue/20">
+        <Code size={24} className="text-codechatter-blue" />
         {!collapsed && (
-          <Link to="/" className="flex items-center space-x-2">
-            <Code size={24} className="text-codechatter-blue" />
-            <span className="text-lg font-bold bg-gradient-to-r from-codechatter-blue to-codechatter-purple bg-clip-text text-transparent">
-              CodeChatter
-            </span>
-          </Link>
+          <span className="ml-2 text-xl font-bold bg-gradient-to-r from-codechatter-blue to-codechatter-purple bg-clip-text text-transparent">
+            CodeChatter
+          </span>
         )}
-        {collapsed && (
-          <Code size={24} className="text-codechatter-blue mx-auto" />
-        )}
-        {!collapsed && (
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={toggleSidebar}
-            className="text-white/70 hover:text-white"
-          >
-            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4">
-              <path d="M8.84182 3.13514C9.04327 3.32401 9.05348 3.64042 8.86462 3.84188L5.43521 7.49991L8.86462 11.1579C9.05348 11.3594 9.04327 11.6758 8.84182 11.8647C8.64036 12.0535 8.32394 12.0433 8.13508 11.8419L4.38508 7.84188C4.20477 7.64955 4.20477 7.35027 4.38508 7.15794L8.13508 3.15794C8.32394 2.95648 8.64036 2.94628 8.84182 3.13514Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-            </svg>
-          </Button>
-        )}
-        {collapsed && (
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={toggleSidebar}
-            className="text-white/70 hover:text-white mx-auto"
-          >
-            <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-4 w-4">
-              <path d="M6.1584 3.13508C6.35985 2.94621 6.67627 2.95642 6.86514 3.15788L10.6151 7.15788C10.7954 7.3502 10.7954 7.64949 10.6151 7.84182L6.86514 11.8418C6.67627 12.0433 6.35985 12.0535 6.1584 11.8646C5.95694 11.6757 5.94673 11.3593 6.1356 11.1579L9.565 7.49985L6.1356 3.84182C5.94673 3.64036 5.95694 3.32394 6.1584 3.13508Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
-            </svg>
-          </Button>
-        )}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="ml-auto text-white/60 hover:text-white hover:bg-white/10"
+          onClick={toggleSidebar}
+        >
+          {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+        </Button>
       </div>
 
-      <nav className="flex-1 py-4">
-        <ul className="space-y-1">
+      {/* Navigation Links */}
+      <div className="flex-1 overflow-y-auto pt-4">
+        <div className="px-3">
+          <Button
+            className="w-full mb-4 bg-gradient-to-r from-codechatter-blue to-codechatter-purple hover:opacity-90"
+          >
+            <Code size={collapsed ? 18 : 16} />
+            {!collapsed && <span className="ml-2">New Challenge</span>}
+          </Button>
+        </div>
+        <div className="space-y-1 px-3">
           {menuItems.map((item, index) => {
-            const Icon = item.icon;
-            
+            const isActive = currentPath === item.path || (item.path === '/dashboard/home' && currentPath === '/dashboard');
             return (
-              <li key={index}>
-                <Link
-                  to={item.path}
-                  className={`
-                    flex items-center px-4 py-3 text-white/70 hover:text-white hover:bg-codechatter-blue/10 transition-colors
-                    ${item.path === '/dashboard' ? 'bg-codechatter-blue/10 text-white' : ''}
-                  `}
+              <Link key={index} to={item.path}>
+                <Button
+                  variant="ghost"
+                  className={cn(
+                    'w-full justify-start',
+                    isActive 
+                      ? 'bg-white/10 text-white' 
+                      : 'text-white/60 hover:text-white hover:bg-white/5'
+                  )}
                 >
-                  <Icon size={20} className="min-w-5" />
-                  {!collapsed && <span className="ml-3">{item.label}</span>}
-                </Link>
-              </li>
+                  <item.icon size={collapsed ? 18 : 16} />
+                  {!collapsed && <span className="ml-2">{item.label}</span>}
+                </Button>
+              </Link>
             );
           })}
-        </ul>
-      </nav>
+        </div>
+      </div>
 
-      <div className="p-4 border-t border-codechatter-blue/20">
-        <div className={`flex items-center ${collapsed ? 'justify-center' : 'space-x-3'}`}>
-          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-codechatter-blue to-codechatter-purple flex items-center justify-center text-white font-bold">
+      {/* User Profile */}
+      <div className="p-3 border-t border-codechatter-blue/20">
+        <div className="flex items-center p-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors">
+          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-codechatter-blue to-codechatter-purple flex items-center justify-center text-white font-medium">
             J
           </div>
           {!collapsed && (
-            <div className="flex-1">
-              <p className="text-sm text-white font-medium">John Doe</p>
-              <p className="text-xs text-white/60">900 points</p>
+            <div className="ml-3 overflow-hidden">
+              <p className="text-sm font-medium text-white truncate">John Doe</p>
+              <p className="text-xs text-white/60 truncate">john@example.com</p>
+            </div>
+          )}
+          {!collapsed && (
+            <div className="ml-auto relative">
+              <Bell size={16} className="text-white/60" />
+              <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
             </div>
           )}
         </div>
