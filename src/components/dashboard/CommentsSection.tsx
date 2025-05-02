@@ -19,6 +19,7 @@ interface CommentsSectionProps {
   newCommentValue: string;
   onNewCommentChange: (postId: string, value: string) => void;
   onAddComment: (postId: string) => void;
+  onDeleteComment?: (commentId: string) => void;
 }
 
 const CommentsSection: React.FC<CommentsSectionProps> = ({ 
@@ -26,7 +27,8 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
   comments, 
   newCommentValue, 
   onNewCommentChange, 
-  onAddComment 
+  onAddComment,
+  onDeleteComment
 }) => {
   return (
     <div className="mt-4 pt-4 border-t border-white/10">
@@ -40,6 +42,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({
               user={comment.user}
               content={comment.content}
               timestamp={comment.timestamp}
+              onDeleteComment={onDeleteComment}
             />
           ))}
         </div>

@@ -41,6 +41,8 @@ interface SocialFeedProps {
   onToggleComments: (postId: string) => void;
   onNewCommentChange: (postId: string, value: string) => void;
   onAddComment: (postId: string) => void;
+  onDeletePost: (postId: string) => void;
+  onEditPost: (postId: string, content: string, updatedComments?: Comment[]) => void;
 }
 
 const SocialFeed: React.FC<SocialFeedProps> = ({
@@ -50,7 +52,9 @@ const SocialFeed: React.FC<SocialFeedProps> = ({
   onBookmarkPost,
   onToggleComments,
   onNewCommentChange,
-  onAddComment
+  onAddComment,
+  onDeletePost,
+  onEditPost
 }) => {
   return (
     <div className="space-y-4">
@@ -64,6 +68,8 @@ const SocialFeed: React.FC<SocialFeedProps> = ({
           onToggleComments={onToggleComments}
           onNewCommentChange={onNewCommentChange}
           onAddComment={onAddComment}
+          onDeletePost={onDeletePost}
+          onEditPost={onEditPost}
         />
       ))}
     </div>

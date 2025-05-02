@@ -7,9 +7,6 @@ import { Code } from 'lucide-react';
 import UserStats from '@/components/dashboard/UserStats';
 import CreatePostForm from '@/components/dashboard/CreatePostForm';
 import SocialFeed from '@/components/dashboard/SocialFeed';
-import RecommendedProblems from '@/components/dashboard/RecommendedProblems';
-import UpcomingEvents from '@/components/dashboard/UpcomingEvents';
-import TopPerformers from '@/components/dashboard/TopPerformers';
 import SearchProblem from '@/components/dashboard/SearchProblem';
 
 interface Comment {
@@ -96,32 +93,48 @@ const Home: React.FC = () => {
       blogTitle: 'Efficient Tree Traversal Techniques for Coding Interviews',
       showComments: false
     },
+    {
+      id: '4',
+      user: { name: 'Elena Rodriguez' },
+      content: 'Just got a job offer from Google after practicing on CodeChatter for 3 months! The community here is amazing and all the practice problems helped me ace my technical interviews.',
+      timestamp: '1 day ago',
+      likes: 98,
+      comments: [
+        {
+          id: 'c2',
+          user: { name: 'John Smith' },
+          content: 'Congratulations! That\'s amazing news!',
+          timestamp: '20 hours ago'
+        },
+        {
+          id: 'c3',
+          user: { name: 'David Lee' },
+          content: 'Would you mind sharing your study plan?',
+          timestamp: '18 hours ago'
+        }
+      ],
+      isLiked: true,
+      isBookmarked: true,
+      type: 'status',
+      showComments: false
+    },
+    {
+      id: '5',
+      user: { name: 'Jessica Park' },
+      content: 'I cracked the "Merge K Sorted Lists" problem using a priority queue. Key insight: always try to use appropriate data structures to simplify complex problems.',
+      timestamp: '2 days ago',
+      likes: 27,
+      comments: [],
+      isLiked: false,
+      isBookmarked: false,
+      type: 'challenge-completion',
+      challengeDetails: {
+        title: 'Merge K Sorted Lists',
+        difficulty: 'Hard'
+      },
+      showComments: false
+    },
   ]);
-
-  const recentProblems = [
-    {
-      title: "Two Sum",
-      difficulty: "Easy" as const,
-      points: 20,
-      tags: ["Arrays", "Hash Table"],
-      solvedBy: 1204,
-      url: "https://leetcode.com/problems/two-sum/"
-    },
-    {
-      title: "Binary Search Tree Validator",
-      difficulty: "Medium" as const,
-      points: 50,
-      tags: ["Data Structure", "Trees", "Recursion"],
-      solvedBy: 245,
-      url: "https://leetcode.com/problems/validate-binary-search-tree/"
-    },
-  ];
-  
-  const upcomingEvents = [
-    { name: 'Weekly Coding Contest', date: 'Saturday, 10:00 AM' },
-    { name: 'Algorithms Study Group', date: 'Wednesday, 7:00 PM' },
-    { name: 'System Design Workshop', date: 'Next Monday, 6:30 PM' }
-  ];
 
   const handleCreatePost = (newPost: Post) => {
     setPosts([newPost, ...posts]);
@@ -206,8 +219,25 @@ const Home: React.FC = () => {
     });
   };
 
-  const handleProblemClick = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
+  const handleDeletePost = (postId: string) => {
+    setPosts(posts.filter(post => post.id !== postId));
+    toast({
+      title: "Post Deleted",
+      description: "Your post has been removed successfully."
+    });
+  };
+
+  const handleEditPost = (postId: string, content: string, updatedComments?: Comment[]) => {
+    setPosts(posts.map(post => {
+      if (post.id === postId) {
+        return {
+          ...post,
+          content,
+          comments: updatedComments || post.comments
+        };
+      }
+      return post;
+    }));
   };
 
   return (
@@ -231,43 +261,29 @@ const Home: React.FC = () => {
         onOpenChange={setIsSearchDialogOpen} 
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2 space-y-6">
-          {/* User Stats */}
-          <UserStats />
+      <div className="grid grid-cols-1 gap-6 max-w-4xl mx-auto">
+        {/* User Stats */}
+        <UserStats />
 
-          {/* Create Post */}
-          <Card className="bg-codechatter-dark border-codechatter-blue/20">
-            <CardContent className="pt-6">
-              <CreatePostForm onPostCreated={handleCreatePost} />
-            </CardContent>
-          </Card>
+        {/* Create Post */}
+        <Card className="bg-codechatter-dark border-codechatter-blue/20">
+          <CardContent className="pt-6">
+            <CreatePostForm onPostCreated={handleCreatePost} />
+          </CardContent>
+        </Card>
 
-          {/* Social Feed */}
-          <SocialFeed 
-            posts={posts}
-            newComments={newComments}
-            onLikePost={handleLikePost}
-            onBookmarkPost={handleBookmarkPost}
-            onToggleComments={handleToggleComments}
-            onNewCommentChange={handleNewCommentChange}
-            onAddComment={handleAddComment}
-          />
-        </div>
-        
-        <div className="space-y-6">
-          {/* Recommended Problems */}
-          <RecommendedProblems 
-            problems={recentProblems}
-            onProblemClick={handleProblemClick}
-          />
-          
-          {/* Upcoming Events */}
-          <UpcomingEvents events={upcomingEvents} />
-          
-          {/* Top Performers */}
-          <TopPerformers />
-        </div>
+        {/* Social Feed */}
+        <SocialFeed 
+          posts={posts}
+          newComments={newComments}
+          onLikePost={handleLikePost}
+          onBookmarkPost={handleBookmarkPost}
+          onToggleComments={handleToggleComments}
+          onNewCommentChange={handleNewCommentChange}
+          onAddComment={handleAddComment}
+          onDeletePost={handleDeletePost}
+          onEditPost={handleEditPost}
+        />
       </div>
     </div>
   );
