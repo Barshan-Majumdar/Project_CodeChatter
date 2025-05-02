@@ -4,8 +4,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Search } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ProblemType {
   title: string;
@@ -28,8 +29,68 @@ const SearchProblem: React.FC<SearchProblemProps> = ({
   const [searchResults, setSearchResults] = useState<ProblemType[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    setIsSearching(true);
+    
+    try {
+      // In a production app, we would call a Supabase Edge Function that interfaces with LeetCode API
+      // For demo purposes, we'll simulate the API call with our local database
+      
+      // Simulate network delay
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Filter the problems based on the search query
+      const filteredProblems = problemsDatabase.filter(problem => 
+        problem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        problem.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+      
+      // Log successful search
+      console.log(`Search for "${searchQuery}" returned ${filteredProblems.length} results`);
+      
+      setSearchResults(filteredProblems);
+    } catch (error) {
+      console.error('Error searching problems:', error);
+      toast({
+        title: "Search failed",
+        description: "There was an error searching for problems. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleProblemClick = (url: string) => {
+    // Track problem click in analytics (would be implemented with Supabase in a real app)
+    console.log(`Opening problem: ${url}`);
+    
+    window.open(url, '_blank', 'noopener,noreferrer');
+    
+    toast({
+      title: "Redirecting to LeetCode",
+      description: "Opening problem in a new tab.",
+    });
+
+    onOpenChange(false);
+  };
+
+  const getDifficultyColor = (difficulty: string) => {
+    switch(difficulty) {
+      case 'Easy': return 'text-green-400';
+      case 'Medium': return 'text-yellow-400';
+      case 'Hard': return 'text-red-400';
+      default: return '';
+    }
+  };
+
   // This is a mock database of problems
-  // In a real app, you might fetch this from an API or Supabase
+  // In a real app, this would be fetched from the LeetCode API via a Supabase Edge Function
   const problemsDatabase: ProblemType[] = [
     {
       title: "Two Sum",
@@ -90,54 +151,44 @@ const SearchProblem: React.FC<SearchProblemProps> = ({
       difficulty: "Medium",
       url: "https://leetcode.com/problems/remove-nth-node-from-end-of-list/",
       tags: ["Linked List", "Two Pointers"]
+    },
+    {
+      title: "Valid Parentheses",
+      difficulty: "Easy",
+      url: "https://leetcode.com/problems/valid-parentheses/",
+      tags: ["String", "Stack"]
+    },
+    {
+      title: "Merge Two Sorted Lists",
+      difficulty: "Easy",
+      url: "https://leetcode.com/problems/merge-two-sorted-lists/",
+      tags: ["Linked List", "Recursion"]
+    },
+    {
+      title: "Generate Parentheses",
+      difficulty: "Medium",
+      url: "https://leetcode.com/problems/generate-parentheses/",
+      tags: ["String", "Backtracking", "Dynamic Programming"]
+    },
+    {
+      title: "Merge k Sorted Lists",
+      difficulty: "Hard",
+      url: "https://leetcode.com/problems/merge-k-sorted-lists/",
+      tags: ["Linked List", "Heap", "Divide and Conquer"]
+    },
+    {
+      title: "Trapping Rain Water",
+      difficulty: "Hard",
+      url: "https://leetcode.com/problems/trapping-rain-water/",
+      tags: ["Array", "Two Pointers", "Stack", "Dynamic Programming"]
     }
   ];
-
-  const handleSearch = () => {
-    if (!searchQuery.trim()) {
-      setSearchResults([]);
-      return;
-    }
-
-    setIsSearching(true);
-    
-    // Simulating an API call with setTimeout
-    setTimeout(() => {
-      const results = problemsDatabase.filter(problem => 
-        problem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        problem.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-      );
-      
-      setSearchResults(results);
-      setIsSearching(false);
-    }, 300);
-  };
-
-  const handleProblemClick = (url: string) => {
-    window.open(url, '_blank', 'noopener,noreferrer');
-    
-    toast({
-      title: "Redirecting to LeetCode",
-      description: "Opening problem in a new tab.",
-    });
-
-    onOpenChange(false);
-  };
-
-  const getDifficultyColor = (difficulty: string) => {
-    switch(difficulty) {
-      case 'Easy': return 'text-green-400';
-      case 'Medium': return 'text-yellow-400';
-      case 'Hard': return 'text-red-400';
-      default: return '';
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[600px] bg-codechatter-dark border-codechatter-blue/20">
         <DialogHeader>
-          <DialogTitle className="text-white text-xl">Search Problems</DialogTitle>
+          <DialogTitle className="text-white text-xl">Search LeetCode Problems</DialogTitle>
           <DialogDescription className="text-white/60">
             Search for a specific problem by title or tag
           </DialogDescription>
@@ -158,14 +209,18 @@ const SearchProblem: React.FC<SearchProblemProps> = ({
             className="bg-codechatter-purple hover:bg-codechatter-purple/90"
             disabled={isSearching}
           >
-            <Search size={18} className="mr-1" />
+            {isSearching ? (
+              <Loader2 size={18} className="mr-1 animate-spin" />
+            ) : (
+              <Search size={18} className="mr-1" />
+            )}
             Search
           </Button>
         </div>
 
         <div className="max-h-[400px] overflow-y-auto">
           {isSearching ? (
-            <div className="text-center text-white/60 py-8">Searching...</div>
+            <div className="text-center text-white/60 py-8">Searching LeetCode problems...</div>
           ) : searchResults.length > 0 ? (
             <div className="space-y-3">
               {searchResults.map((problem, index) => (

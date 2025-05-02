@@ -10,6 +10,7 @@ import SocialFeed from '@/components/dashboard/SocialFeed';
 import RecommendedProblems from '@/components/dashboard/RecommendedProblems';
 import UpcomingEvents from '@/components/dashboard/UpcomingEvents';
 import TopPerformers from '@/components/dashboard/TopPerformers';
+import SearchProblem from '@/components/dashboard/SearchProblem';
 
 interface Comment {
   id: string;
@@ -45,6 +46,7 @@ interface Post {
 const Home: React.FC = () => {
   const { toast } = useToast();
   const [newComments, setNewComments] = useState<Record<string, string>>({});
+  const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [posts, setPosts] = useState<Post[]>([
     {
       id: '1',
@@ -215,12 +217,19 @@ const Home: React.FC = () => {
           <h1 className="text-2xl font-bold">Welcome Home, John!</h1>
           <Button
             className="bg-codechatter-dark hover:bg-codechatter-purple/20 border border-codechatter-blue/20"
+            onClick={() => setIsSearchDialogOpen(true)}
           >
             <Code size={18} className="mr-2" /> New Challenge
           </Button>
         </div>
         <p className="text-white/60">Your coding community updates</p>
       </header>
+
+      {/* Search Problem Dialog */}
+      <SearchProblem 
+        open={isSearchDialogOpen} 
+        onOpenChange={setIsSearchDialogOpen} 
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">

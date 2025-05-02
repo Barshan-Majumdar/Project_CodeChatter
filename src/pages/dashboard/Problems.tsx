@@ -3,12 +3,21 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ProblemCard from '@/components/dashboard/ProblemCard';
 import { Button } from '@/components/ui/button';
-import { Search, Filter } from 'lucide-react';
+import { Search, Filter, Loader2, ChevronDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import {
+  Pagination,
+  PaginationContent,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from "@/components/ui/pagination";
+import SearchProblem from '@/components/dashboard/SearchProblem';
 
-const difficulties = ['All', 'Easy', 'Medium', 'Hard'];
-const topics = ['All', 'Arrays', 'Strings', 'Dynamic Programming', 'Graphs', 'Trees', 'Hash Tables'];
+const difficulties = ['All', 'Easy', 'Medium', 'Hard', 'Mixed'];
+const topics = ['All', 'Arrays', 'Strings', 'Dynamic Programming', 'Graphs', 'Trees', 'Hash Tables', 'Math', 'Greedy', 'Binary Search'];
 
 interface ProblemType {
   title: string;
@@ -24,8 +33,15 @@ const Problems: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDifficulty, setSelectedDifficulty] = useState('All');
   const [selectedTopic, setSelectedTopic] = useState('All');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [isShowingMore, setIsShowingMore] = useState(false);
+  const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
 
-  const problems: ProblemType[] = [
+  const itemsPerPage = 6;
+
+  // Extended problem dataset
+  const allProblems: ProblemType[] = [
     {
       title: "Binary Search Tree Validator",
       difficulty: "Medium",
@@ -89,18 +105,105 @@ const Problems: React.FC = () => {
       tags: ["Hash Table", "Linked Lists", "Design"],
       solvedBy: 211,
       url: "https://leetcode.com/problems/lru-cache/"
+    },
+    // Additional problems
+    {
+      title: "Add Two Numbers",
+      difficulty: "Medium",
+      points: 35,
+      tags: ["Linked Lists", "Math", "Recursion"],
+      solvedBy: 723,
+      url: "https://leetcode.com/problems/add-two-numbers/"
+    },
+    {
+      title: "Longest Substring Without Repeating Characters",
+      difficulty: "Medium",
+      points: 45,
+      tags: ["Hash Table", "Strings", "Sliding Window"],
+      solvedBy: 891,
+      url: "https://leetcode.com/problems/longest-substring-without-repeating-characters/"
+    },
+    {
+      title: "Median of Two Sorted Arrays",
+      difficulty: "Hard",
+      points: 110,
+      tags: ["Arrays", "Binary Search", "Divide and Conquer"],
+      solvedBy: 102,
+      url: "https://leetcode.com/problems/median-of-two-sorted-arrays/"
+    },
+    {
+      title: "Container With Most Water",
+      difficulty: "Medium",
+      points: 50,
+      tags: ["Arrays", "Two Pointers", "Greedy"],
+      solvedBy: 421,
+      url: "https://leetcode.com/problems/container-with-most-water/"
+    },
+    {
+      title: "3Sum",
+      difficulty: "Medium",
+      points: 55,
+      tags: ["Arrays", "Two Pointers", "Sorting"],
+      solvedBy: 378,
+      url: "https://leetcode.com/problems/3sum/"
+    },
+    {
+      title: "Reverse Integer",
+      difficulty: "Easy",
+      points: 15,
+      tags: ["Math", "Bit Manipulation"],
+      solvedBy: 967,
+      url: "https://leetcode.com/problems/reverse-integer/"
+    },
+    {
+      title: "Palindrome Number",
+      difficulty: "Easy",
+      points: 10,
+      tags: ["Math"],
+      solvedBy: 1156,
+      url: "https://leetcode.com/problems/palindrome-number/"
+    },
+    {
+      title: "Roman to Integer",
+      difficulty: "Easy",
+      points: 15,
+      tags: ["Math", "String"],
+      solvedBy: 1043,
+      url: "https://leetcode.com/problems/roman-to-integer/"
     }
   ];
 
-  const filteredProblems = problems.filter(problem => {
+  const loadMoreProblems = () => {
+    setLoading(true);
+    setIsShowingMore(true);
+    
+    // Simulate network delay for loading more problems
+    setTimeout(() => {
+      setLoading(false);
+    }, 800);
+  };
+
+  const filteredProblems = allProblems.filter(problem => {
     const matchesSearch = problem.title.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesDifficulty = selectedDifficulty === 'All' || problem.difficulty === selectedDifficulty;
+    
+    const matchesDifficulty = 
+      selectedDifficulty === 'All' || 
+      selectedDifficulty === 'Mixed' ||
+      problem.difficulty === selectedDifficulty;
+    
     const matchesTopic = selectedTopic === 'All' || problem.tags.some(tag => 
       tag.toLowerCase().includes(selectedTopic.toLowerCase())
     );
     
     return matchesSearch && matchesDifficulty && matchesTopic;
   });
+
+  const totalPages = Math.ceil(filteredProblems.length / itemsPerPage);
+  
+  const currentProblems = filteredProblems.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const handleProblemClick = (url: string) => {
     window.open(url, '_blank', 'noopener,noreferrer');
@@ -111,12 +214,30 @@ const Problems: React.FC = () => {
     });
   };
 
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   return (
     <div className="p-6">
       <header className="mb-6">
-        <h1 className="text-2xl font-bold">Problems Library</h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-2xl font-bold">Problems Library</h1>
+          <Button
+            onClick={() => setIsSearchDialogOpen(true)}
+            className="bg-codechatter-purple hover:bg-codechatter-purple/90"
+          >
+            <Search size={18} className="mr-2" /> New Challenge
+          </Button>
+        </div>
         <p className="text-white/60">Practice your coding skills with these challenges</p>
       </header>
+
+      <SearchProblem 
+        open={isSearchDialogOpen} 
+        onOpenChange={setIsSearchDialogOpen} 
+      />
 
       <div className="mb-6 flex flex-col md:flex-row gap-4">
         <div className="relative flex-1">
@@ -169,7 +290,7 @@ const Problems: React.FC = () => {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {filteredProblems.map((problem, index) => (
+        {currentProblems.map((problem, index) => (
           <div 
             key={index} 
             className="cursor-pointer" 
@@ -192,6 +313,83 @@ const Problems: React.FC = () => {
             No problems match your current filters. Try adjusting your search.
           </CardContent>
         </Card>
+      )}
+
+      {filteredProblems.length > 0 && (
+        <div className="mt-6 flex flex-col items-center gap-4">
+          <Pagination>
+            <PaginationContent>
+              <PaginationItem>
+                <PaginationPrevious 
+                  onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+                  className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+              
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                const pageNumber = i + 1;
+                return (
+                  <PaginationItem key={pageNumber}>
+                    <PaginationLink 
+                      isActive={currentPage === pageNumber}
+                      onClick={() => handlePageChange(pageNumber)}
+                      className="cursor-pointer"
+                    >
+                      {pageNumber}
+                    </PaginationLink>
+                  </PaginationItem>
+                );
+              })}
+              
+              {totalPages > 5 && (
+                <PaginationItem>
+                  <span className="flex items-center justify-center h-9 w-9">
+                    ...
+                  </span>
+                </PaginationItem>
+              )}
+              
+              {totalPages > 5 && (
+                <PaginationItem>
+                  <PaginationLink 
+                    onClick={() => handlePageChange(totalPages)}
+                    className="cursor-pointer"
+                  >
+                    {totalPages}
+                  </PaginationLink>
+                </PaginationItem>
+              )}
+              
+              <PaginationItem>
+                <PaginationNext 
+                  onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
+                  className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                />
+              </PaginationItem>
+            </PaginationContent>
+          </Pagination>
+          
+          <Button 
+            variant="outline" 
+            className="border-codechatter-blue/20 text-codechatter-blue hover:bg-codechatter-blue/10"
+            onClick={loadMoreProblems}
+            disabled={loading || isShowingMore}
+          >
+            {loading ? (
+              <>
+                <Loader2 size={16} className="mr-2 animate-spin" /> 
+                Loading more problems...
+              </>
+            ) : isShowingMore ? (
+              "All problems loaded"
+            ) : (
+              <>
+                <ChevronDown size={16} className="mr-2" /> 
+                Load More Problems from LeetCode
+              </>
+            )}
+          </Button>
+        </div>
       )}
     </div>
   );
