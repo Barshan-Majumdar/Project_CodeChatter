@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -65,7 +64,7 @@ interface PostProps {
   onEditPost?: (postId: string, content: string) => void;
 }
 
-const Post: React.FC<PostProps> = ({
+const PostComponent: React.FC<PostProps> = ({
   post,
   newCommentValue,
   onLikePost,
@@ -254,25 +253,18 @@ const Post: React.FC<PostProps> = ({
       )}
       
       {/* Comments Section */}
-      {post.showComments && !isEditing && (
-        <CommentsSection 
+      {post.showComments && (
+        <CommentsSection
           postId={post.id}
           comments={post.comments}
           newCommentValue={newCommentValue}
-          onNewCommentChange={onNewCommentChange}
+          onNewCommentChange={(postId, value) => onNewCommentChange(postId, value)}
           onAddComment={onAddComment}
-          onDeleteComment={(commentId) => {
-            // This will be handled in the parent component
-            if (onEditPost) {
-              const updatedComments = post.comments.filter(c => c.id !== commentId);
-              const updatedPost = { ...post, comments: updatedComments };
-              onEditPost(post.id, post.content, updatedComments);
-            }
-          }}
+          onDeleteComment={(commentId) => onDeletePost(commentId)}
         />
       )}
     </div>
   );
 };
 
-export default Post;
+export default PostComponent;
