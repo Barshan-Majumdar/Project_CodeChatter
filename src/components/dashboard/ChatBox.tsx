@@ -9,6 +9,7 @@ import { Tooltip } from '@/components/ui/tooltip';
 import { TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { useToast } from '@/hooks/use-toast';
 
 interface Message {
   id: number;
@@ -55,6 +56,9 @@ const ChatBox: React.FC = () => {
   const [input, setInput] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
 
   // Scroll to bottom whenever messages change
   useEffect(() => {
@@ -87,40 +91,72 @@ const ChatBox: React.FC = () => {
     }, 1000);
   };
 
-  const handleImageUpload = () => {
-    // Simulate image upload
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0) return;
+    
+    const file = event.target.files[0];
+    const imageUrl = URL.createObjectURL(file);
+    
+    // Create image message
     const imageMessage: Message = {
       id: messages.length + 1,
       text: "I've shared an image",
       sender: 'user',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       isImage: true,
-      imageUrl: "https://placehold.co/300x200/darkblue/white?text=Code+Screenshot"
+      imageUrl: imageUrl
     };
     setMessages([...messages, imageMessage]);
+    
+    // Clear the file input
+    event.target.value = '';
+    
+    toast({
+      title: "Image uploaded",
+      description: "Your image has been shared successfully",
+    });
   };
 
-  const handleAttachmentUpload = () => {
-    // Simulate attachment upload
+  const handleAttachmentUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!event.target.files || event.target.files.length === 0) return;
+    
+    const file = event.target.files[0];
+    
+    // Create attachment message
     const attachmentMessage: Message = {
       id: messages.length + 1,
       text: "I've shared a file",
       sender: 'user',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       isAttachment: true,
-      attachmentName: "algorithm.pdf"
+      attachmentName: file.name
     };
     setMessages([...messages, attachmentMessage]);
+    
+    // Clear the file input
+    event.target.value = '';
+    
+    toast({
+      title: "File uploaded",
+      description: "Your file has been shared successfully",
+    });
   };
 
   const toggleRecording = () => {
     setIsRecording(!isRecording);
     if (!isRecording) {
       // Simulate starting voice recording
-      console.log("Started recording...");
+      toast({
+        title: "Recording started",
+        description: "Recording voice message...",
+      });
     } else {
       // Simulate stopping voice recording and sending
-      console.log("Stopped recording, processing voice...");
+      toast({
+        title: "Voice message sent",
+        description: "Voice message processed successfully",
+      });
+      
       setTimeout(() => {
         const voiceMessage: Message = {
           id: messages.length + 1,
@@ -234,12 +270,19 @@ const ChatBox: React.FC = () => {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 
-                    onClick={handleImageUpload}
                     variant="ghost" 
                     size="icon" 
                     className="text-white/60 hover:text-white hover:bg-white/10 h-10 w-10"
+                    onClick={() => imageInputRef.current?.click()}
                   >
                     <Image size={20} />
+                    <input 
+                      type="file"
+                      ref={imageInputRef}
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -249,12 +292,18 @@ const ChatBox: React.FC = () => {
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 
-                    onClick={handleAttachmentUpload}
                     variant="ghost" 
                     size="icon" 
                     className="text-white/60 hover:text-white hover:bg-white/10 h-10 w-10"
+                    onClick={() => fileInputRef.current?.click()}
                   >
                     <Paperclip size={20} />
+                    <input 
+                      type="file"
+                      ref={fileInputRef}
+                      onChange={handleAttachmentUpload}
+                      className="hidden"
+                    />
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>

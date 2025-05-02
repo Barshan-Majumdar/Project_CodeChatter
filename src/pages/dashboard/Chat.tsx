@@ -8,6 +8,14 @@ import { Search, Phone, Video, Send, Image, Paperclip, Mic } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription
+} from '@/components/ui/dialog';
+import { useToast } from '@/hooks/use-toast';
 
 interface Contact {
   id: string;
@@ -83,6 +91,13 @@ const Chat: React.FC = () => {
   const [message, setMessage] = useState('');
   const [isRecording, setIsRecording] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const attachmentInputRef = useRef<HTMLInputElement>(null);
+  const [isCallingDialogOpen, setIsCallingDialogOpen] = useState(false);
+  const [isVideoDialogOpen, setIsVideoDialogOpen] = useState(false);
+  const [callStatus, setCallStatus] = useState<'dialing' | 'connected' | 'ended'>('dialing');
+  const { toast } = useToast();
   
   // Sample conversations for each contact
   const contactMessages: Record<string, Message[]> = {
@@ -225,17 +240,20 @@ const Chat: React.FC = () => {
     }, Math.random() * 2000 + 1000); // Random delay between 1-3 seconds
   };
 
-  const handleImageUpload = () => {
-    if (!selectedContact) return;
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!selectedContact || !event.target.files || event.target.files.length === 0) return;
     
-    // Simulate image upload
+    const file = event.target.files[0];
+    const imageUrl = URL.createObjectURL(file);
+    
+    // Create new message with image
     const newMessage: Message = {
       id: Date.now().toString(),
       text: 'Shared an image',
       sender: 'me',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       isImage: true,
-      imageUrl: 'https://placehold.co/400x300/darkblue/white?text=Shared+Image'
+      imageUrl: imageUrl
     };
     
     const updatedMessages = [...messages, newMessage];
@@ -248,19 +266,29 @@ const Chat: React.FC = () => {
         ? { ...contact, lastMessage: 'Image', time: 'Just now' } 
         : contact
     ));
+
+    // Clear the file input
+    event.target.value = '';
+    
+    toast({
+      title: "Image sent",
+      description: "Image has been shared successfully",
+    });
   };
 
-  const handleAttachmentUpload = () => {
-    if (!selectedContact) return;
+  const handleAttachmentUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (!selectedContact || !event.target.files || event.target.files.length === 0) return;
     
-    // Simulate file upload
+    const file = event.target.files[0];
+    
+    // Create new message with file attachment
     const newMessage: Message = {
       id: Date.now().toString(),
       text: 'Shared a file',
       sender: 'me',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       isAttachment: true,
-      attachmentName: 'document.pdf'
+      attachmentName: file.name
     };
     
     const updatedMessages = [...messages, newMessage];
@@ -270,9 +298,17 @@ const Chat: React.FC = () => {
     // Update contact's last message
     setContacts(contacts.map(contact => 
       contact.id === selectedContact.id 
-        ? { ...contact, lastMessage: 'File: document.pdf', time: 'Just now' } 
+        ? { ...contact, lastMessage: `File: ${file.name}`, time: 'Just now' } 
         : contact
     ));
+
+    // Clear the file input
+    event.target.value = '';
+    
+    toast({
+      title: "File sent",
+      description: "File has been shared successfully",
+    });
   };
 
   const toggleRecording = () => {
@@ -301,7 +337,47 @@ const Chat: React.FC = () => {
           ? { ...contact, lastMessage: 'Voice message (0:08)', time: 'Just now' } 
           : contact
       ));
+      
+      toast({
+        title: "Voice message sent",
+        description: "Voice message has been shared successfully",
+      });
+    } else {
+      toast({
+        title: "Recording started",
+        description: "Recording voice message...",
+      });
     }
+  };
+
+  const handlePhoneCall = () => {
+    if (!selectedContact) return;
+    setIsCallingDialogOpen(true);
+    setCallStatus('dialing');
+    
+    // Simulate call connecting after 2 seconds
+    setTimeout(() => {
+      setCallStatus('connected');
+    }, 2000);
+  };
+  
+  const handleVideoCall = () => {
+    if (!selectedContact) return;
+    setIsVideoDialogOpen(true);
+    setCallStatus('dialing');
+    
+    // Simulate call connecting after 2 seconds
+    setTimeout(() => {
+      setCallStatus('connected');
+    }, 2000);
+  };
+  
+  const endCall = () => {
+    setCallStatus('ended');
+    setTimeout(() => {
+      setIsCallingDialogOpen(false);
+      setIsVideoDialogOpen(false);
+    }, 1000);
   };
 
   return (
@@ -388,10 +464,20 @@ const Chat: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="ghost" size="icon" className="text-white/60 hover:text-white hover:bg-white/10">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="text-white/60 hover:text-white hover:bg-white/10"
+                  onClick={handlePhoneCall}
+                >
                   <Phone size={18} />
                 </Button>
-                <Button variant="ghost" size="icon" className="text-white/60 hover:text-white hover:bg-white/10">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="text-white/60 hover:text-white hover:bg-white/10"
+                  onClick={handleVideoCall}
+                >
                   <Video size={18} />
                 </Button>
                 <Sheet>
@@ -509,11 +595,34 @@ const Chat: React.FC = () => {
             <div className="p-4 border-t border-codechatter-blue/20 bg-codechatter-dark">
               <div className="flex items-end gap-2">
                 <div className="flex gap-2">
-                  <Button variant="ghost" size="icon" className="text-white/60 hover:text-white hover:bg-white/10" onClick={handleImageUpload}>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-white/60 hover:text-white hover:bg-white/10"
+                    onClick={() => imageInputRef.current?.click()}
+                  >
                     <Image size={20} />
+                    <input 
+                      type="file"
+                      ref={imageInputRef}
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
                   </Button>
-                  <Button variant="ghost" size="icon" className="text-white/60 hover:text-white hover:bg-white/10" onClick={handleAttachmentUpload}>
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="text-white/60 hover:text-white hover:bg-white/10"
+                    onClick={() => attachmentInputRef.current?.click()}
+                  >
                     <Paperclip size={20} />
+                    <input 
+                      type="file"
+                      ref={attachmentInputRef}
+                      onChange={handleAttachmentUpload}
+                      className="hidden"
+                    />
                   </Button>
                 </div>
                 
@@ -569,6 +678,121 @@ const Chat: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Phone Call Dialog */}
+      <Dialog open={isCallingDialogOpen} onOpenChange={setIsCallingDialogOpen}>
+        <DialogContent className="sm:max-w-md bg-codechatter-darker border-codechatter-blue/20">
+          <DialogHeader>
+            <DialogTitle className="text-center text-white">
+              {callStatus === 'dialing' ? 'Calling...' : 
+               callStatus === 'connected' ? 'Call in progress' : 
+               'Call ended'}
+            </DialogTitle>
+          </DialogHeader>
+          <DialogDescription>
+            <div className="flex flex-col items-center justify-center py-8">
+              <Avatar className="h-24 w-24 mb-4">
+                {selectedContact?.avatar ? (
+                  <img src={selectedContact.avatar} alt={selectedContact?.name} className="h-full w-full object-cover" />
+                ) : (
+                  <div className="bg-gradient-to-br from-codechatter-blue to-codechatter-purple w-full h-full flex items-center justify-center text-white text-2xl">
+                    {selectedContact?.name.charAt(0)}
+                  </div>
+                )}
+              </Avatar>
+              <h3 className="text-xl font-medium text-white mb-2">{selectedContact?.name}</h3>
+              <p className="text-white/60 mb-8">
+                {callStatus === 'dialing' ? 'Calling...' : 
+                 callStatus === 'connected' ? 'Call connected' : 
+                 'Call ended'}
+              </p>
+              
+              <div className="flex gap-4">
+                {callStatus !== 'ended' && (
+                  <Button 
+                    variant="destructive" 
+                    size="icon" 
+                    className="rounded-full h-14 w-14"
+                    onClick={endCall}
+                  >
+                    <Phone className="h-6 w-6" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          </DialogDescription>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Video Call Dialog */}
+      <Dialog open={isVideoDialogOpen} onOpenChange={setIsVideoDialogOpen}>
+        <DialogContent className="sm:max-w-[500px] h-[400px] bg-codechatter-darker border-codechatter-blue/20 p-0 overflow-hidden">
+          <DialogHeader className="absolute top-0 left-0 right-0 p-4 bg-gradient-to-b from-black/80 to-transparent z-10">
+            <DialogTitle className="text-white">
+              {callStatus === 'dialing' ? 'Video calling...' : 
+               callStatus === 'connected' ? 'Video call connected' : 
+               'Video call ended'}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="relative w-full h-full bg-codechatter-dark">
+            {callStatus === 'connected' && (
+              <div className="absolute top-0 right-0 m-4 w-32 h-24 rounded-lg overflow-hidden border-2 border-white bg-codechatter-blue/30">
+                {/* Your video preview here */}
+              </div>
+            )}
+            
+            <div className="w-full h-full flex flex-col items-center justify-center">
+              {callStatus === 'dialing' && (
+                <>
+                  <Avatar className="h-24 w-24 mb-4">
+                    {selectedContact?.avatar ? (
+                      <img src={selectedContact.avatar} alt={selectedContact?.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="bg-gradient-to-br from-codechatter-blue to-codechatter-purple w-full h-full flex items-center justify-center text-white text-2xl">
+                        {selectedContact?.name.charAt(0)}
+                      </div>
+                    )}
+                  </Avatar>
+                  <p className="text-white/80">Connecting video call...</p>
+                </>
+              )}
+              
+              {callStatus === 'connected' && (
+                <div className="w-full h-full flex items-center justify-center">
+                  {selectedContact?.avatar ? (
+                    <img 
+                      src={selectedContact.avatar} 
+                      alt={selectedContact?.name} 
+                      className="w-full h-full object-cover" 
+                    />
+                  ) : (
+                    <div className="bg-gradient-to-br from-codechatter-blue to-codechatter-purple w-full h-full flex items-center justify-center text-white text-4xl">
+                      {selectedContact?.name.charAt(0)}
+                    </div>
+                  )}
+                </div>
+              )}
+              
+              {callStatus === 'ended' && (
+                <p className="text-white/80">Video call ended</p>
+              )}
+            </div>
+            
+            <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-black/80 to-transparent flex justify-center">
+              {callStatus !== 'ended' && (
+                <Button 
+                  variant="destructive" 
+                  size="icon" 
+                  className="rounded-full h-12 w-12"
+                  onClick={endCall}
+                >
+                  <Video className="h-5 w-5" />
+                </Button>
+              )}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
