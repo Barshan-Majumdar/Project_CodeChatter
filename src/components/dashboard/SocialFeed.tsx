@@ -1,6 +1,6 @@
 
 import React from 'react';
-import Post from './Post';
+import PostComponent from './Post';
 
 interface Comment {
   id: string;
@@ -55,7 +55,7 @@ const SocialFeed: React.FC<SocialFeedProps> = ({
   return (
     <div className="space-y-4">
       {posts.map((post) => (
-        <Post
+        <PostComponent
           key={post.id}
           post={post}
           newCommentValue={newComments[post.id] || ''}

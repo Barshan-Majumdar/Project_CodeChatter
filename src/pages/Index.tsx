@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { 
   Code, MessageSquare, Users, Star
@@ -13,6 +13,7 @@ import TestimonialCard from '@/components/TestimonialCard';
 
 const Index = () => {
   const statsRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
   
   // Animation for counting up stats
   useEffect(() => {
@@ -56,6 +57,14 @@ const Index = () => {
     };
   }, []);
 
+  const handleGetStarted = () => {
+    navigate('/login');
+  };
+
+  const handleLearnMore = () => {
+    navigate('/learn-more');
+  };
+
   return (
     <div className="min-h-screen bg-codechatter-darker text-white">
       <Navbar />
@@ -75,15 +84,14 @@ const Index = () => {
               <div className="flex flex-wrap gap-4">
                 <Button
                   className="bg-gradient-to-r from-codechatter-blue to-codechatter-purple hover:opacity-90 text-white px-8 py-6 text-lg"
-                  asChild
+                  onClick={handleGetStarted}
                 >
-                  <Link to="/dashboard">
-                    Get Started
-                  </Link>
+                  Get Started
                 </Button>
                 <Button
                   variant="outline"
                   className="border-codechatter-blue text-codechatter-blue hover:bg-codechatter-blue/10 px-8 py-6 text-lg"
+                  onClick={handleLearnMore}
                 >
                   Learn More
                 </Button>
@@ -284,11 +292,9 @@ const Index = () => {
               </p>
               <Button
                 className="bg-gradient-to-r from-codechatter-blue to-codechatter-purple hover:opacity-90 text-white px-8 py-6 text-lg"
-                asChild
+                onClick={handleGetStarted}
               >
-                <Link to="/dashboard">
-                  Join the Beta
-                </Link>
+                Join the Beta
               </Button>
             </div>
           </div>

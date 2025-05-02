@@ -1,14 +1,23 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Code, Menu, X } from 'lucide-react';
 
 const Navbar: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
+  };
+
+  const handleLoginClick = () => {
+    navigate('/login');
+  };
+
+  const handleSignUpClick = () => {
+    navigate('/login?tab=sign-up');
   };
 
   return (
@@ -36,16 +45,13 @@ const Navbar: React.FC = () => {
             <Link to="/contact" className="text-sm text-white/80 hover:text-white transition-colors">
               Contact
             </Link>
-            <Link to="/dashboard" className="text-sm text-white/80 hover:text-white transition-colors">
-              Dashboard
-            </Link>
           </div>
           
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="ghost" className="text-white/80 hover:text-white">
+            <Button variant="ghost" className="text-white/80 hover:text-white" onClick={handleLoginClick}>
               Log In
             </Button>
-            <Button className="bg-gradient-to-r from-codechatter-purple to-codechatter-blue hover:opacity-90 text-white">
+            <Button className="bg-gradient-to-r from-codechatter-purple to-codechatter-blue hover:opacity-90 text-white" onClick={handleSignUpClick}>
               Sign Up
             </Button>
           </div>
@@ -74,14 +80,11 @@ const Navbar: React.FC = () => {
             <Link to="/contact" className="text-white/80 hover:text-white py-2">
               Contact
             </Link>
-            <Link to="/dashboard" className="text-white/80 hover:text-white py-2">
-              Dashboard
-            </Link>
             <div className="pt-4 flex flex-col space-y-2">
-              <Button variant="outline" className="w-full">
+              <Button variant="outline" className="w-full" onClick={handleLoginClick}>
                 Log In
               </Button>
-              <Button className="w-full bg-gradient-to-r from-codechatter-purple to-codechatter-blue">
+              <Button className="w-full bg-gradient-to-r from-codechatter-purple to-codechatter-blue" onClick={handleSignUpClick}>
                 Sign Up
               </Button>
             </div>
