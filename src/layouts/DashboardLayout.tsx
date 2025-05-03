@@ -5,21 +5,27 @@ import Sidebar from '@/components/dashboard/Sidebar';
 import { useToast } from '@/hooks/use-toast';
 import AuthForm from '@/components/auth/AuthForm';
 
+interface UserData {
+  name: string;
+  email: string;
+}
+
 const DashboardLayout: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userData, setUserData] = useState<UserData>({ name: '', email: '' });
   const { toast } = useToast();
   const navigate = useNavigate();
 
   // Check if the user is authenticated
-  // In a real app with Supabase, you would check the auth state here
   useEffect(() => {
-    // For demo purposes, we'll assume the user is not authenticated initially
     const checkAuth = () => {
-      // In a real app, check if there's a session token or similar
       const token = localStorage.getItem('auth-token');
-      if (token) {
+      const storedUserData = localStorage.getItem('user-data');
+      
+      if (token && storedUserData) {
         setIsAuthenticated(true);
+        setUserData(JSON.parse(storedUserData));
       }
     };
     
@@ -30,14 +36,19 @@ const DashboardLayout: React.FC = () => {
     setSidebarCollapsed(!sidebarCollapsed);
   };
 
-  const handleAuthSuccess = () => {
+  const handleAuthSuccess = (name: string, email: string) => {
     // Set authenticated and store a dummy token
+    const newUserData = { name, email };
+    
     setIsAuthenticated(true);
+    setUserData(newUserData);
+    
     localStorage.setItem('auth-token', 'demo-token');
+    localStorage.setItem('user-data', JSON.stringify(newUserData));
     
     toast({
       title: "Authentication Successful",
-      description: "Welcome to your CodeChatter dashboard!",
+      description: `Welcome to your CodeChatter dashboard, ${name}!`,
     });
     
     navigate('/dashboard/home');
@@ -53,9 +64,13 @@ const DashboardLayout: React.FC = () => {
 
   return (
     <div className="flex h-screen bg-codechatter-darker text-white overflow-hidden">
-      <Sidebar collapsed={sidebarCollapsed} toggleSidebar={toggleSidebar} />
+      <Sidebar 
+        collapsed={sidebarCollapsed} 
+        toggleSidebar={toggleSidebar}
+        userData={userData}
+      />
       <main className="flex-1 overflow-y-auto">
-        <Outlet />
+        <Outlet context={userData} />
       </main>
     </div>
   );

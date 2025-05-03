@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -5,16 +6,25 @@ import { Code, Home, BookOpen, MessageSquare, Users, Award, Settings, ChevronLef
 import { cn } from '@/lib/utils';
 import SearchProblem from './SearchProblem';
 
+interface UserData {
+  name: string;
+  email: string;
+}
+
 interface SidebarProps {
   collapsed: boolean;
   toggleSidebar: () => void;
+  userData: UserData;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
+const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar, userData }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const currentPath = location.pathname;
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
+  
+  // Get first letter of user's name for avatar
+  const userInitial = userData.name ? userData.name[0].toUpperCase() : '?';
   
   const menuItems = [
     {
@@ -127,12 +137,12 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
       <div className="p-3 border-t border-codechatter-blue/20">
         <div className="flex items-center p-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors">
           <div className="h-8 w-8 rounded-full bg-gradient-to-br from-codechatter-blue to-codechatter-purple flex items-center justify-center text-white font-medium">
-            J
+            {userInitial}
           </div>
           {!collapsed && (
             <div className="ml-3 overflow-hidden">
-              <p className="text-sm font-medium text-white truncate">John Doe</p>
-              <p className="text-xs text-white/60 truncate">john@example.com</p>
+              <p className="text-sm font-medium text-white truncate">{userData.name}</p>
+              <p className="text-xs text-white/60 truncate">{userData.email}</p>
             </div>
           )}
           {!collapsed && (

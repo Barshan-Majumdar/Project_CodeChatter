@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,7 +10,7 @@ import { LogIn, UserPlus, Mail, Lock, User, Github, User2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 interface AuthFormProps {
-  onSuccess?: () => void;
+  onSuccess?: (name: string, email: string) => void;
   defaultTab?: string;
 }
 
@@ -57,16 +56,15 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
     setIsLoading(true);
     
     // In a real app, this would call Supabase to create a new user
-    // For now, we'll simulate a successful sign up
     setTimeout(() => {
       toast({
         title: "Account Created",
         description: "Welcome to CodeChatter! You have successfully created an account.",
       });
       
-      // Navigate to dashboard or trigger success callback
+      // Pass user name and email to the onSuccess callback
       if (onSuccess) {
-        onSuccess();
+        onSuccess(signUpName, signUpEmail);
       } else {
         navigate('/dashboard/home');
       }
@@ -91,16 +89,22 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
     setIsLoading(true);
     
     // In a real app, this would call Supabase to authenticate the user
-    // For now, we'll simulate a successful sign in
+    // For now, we'll simulate a successful sign in with a default user name
     setTimeout(() => {
+      // For demo purposes, extract a user name from the email
+      const defaultName = signInEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ')
+        .split(' ')
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+      
       toast({
         title: "Signed In",
         description: "Welcome back to CodeChatter!",
       });
       
-      // Navigate to dashboard or trigger success callback
+      // Pass user name and email to the onSuccess callback
       if (onSuccess) {
-        onSuccess();
+        onSuccess(defaultName, signInEmail);
       } else {
         navigate('/dashboard/home');
       }
@@ -120,14 +124,19 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
     // In a real app, this would call Supabase to authenticate with social provider
     // For now, we'll simulate a successful sign in
     setTimeout(() => {
+      const mockUserData = {
+        name: `${provider} User`,
+        email: `user@${provider.toLowerCase()}.example`
+      };
+      
       toast({
         title: "Signed In",
         description: `Welcome back to CodeChatter! Authenticated with ${provider}.`,
       });
       
-      // Navigate to dashboard or trigger success callback
+      // Pass user name and email to the onSuccess callback
       if (onSuccess) {
-        onSuccess();
+        onSuccess(mockUserData.name, mockUserData.email);
       } else {
         navigate('/dashboard/home');
       }
