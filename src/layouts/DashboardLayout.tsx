@@ -46,17 +46,23 @@ const DashboardLayout: React.FC = () => {
             localStorage.setItem('auth-token', session.access_token);
             
             // Only show toast for sign in events
-            if (event === 'SIGNED_IN') {
-              toast({
-                title: "Authentication Successful",
-                description: `Welcome to your CodeChatter dashboard, ${fullName}!`,
-              });
-            }
-          } else if (event === 'SIGNED_OUT') {
+            toast({
+              title: "Authentication Successful",
+              description: `Welcome to your CodeChatter dashboard, ${fullName}!`,
+            });
+          } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
             setIsAuthenticated(false);
             setUserData({ name: '', email: '' });
             localStorage.removeItem('auth-token');
             localStorage.removeItem('user-data');
+            
+            if (event === 'SIGNED_OUT') {
+              toast({
+                title: "Signed Out",
+                description: "You have been signed out of CodeChatter.",
+              });
+              navigate('/login');
+            }
           }
         }
       );
@@ -80,23 +86,21 @@ const DashboardLayout: React.FC = () => {
         localStorage.setItem('user-data', JSON.stringify(newUserData));
         localStorage.setItem('auth-token', session.access_token);
       } else {
-        // Check for stored token as fallback
-        const token = localStorage.getItem('auth-token');
-        const storedUserData = localStorage.getItem('user-data');
-        
-        if (token && storedUserData) {
-          setIsAuthenticated(true);
-          setUserData(JSON.parse(storedUserData));
-        }
+        // Clear any potentially stale data
+        localStorage.removeItem('auth-token');
+        localStorage.removeItem('user-data');
+        setIsAuthenticated(false);
       }
       
       setIsLoading(false);
       
-      return () => subscription.unsubscribe();
+      return () => {
+        subscription.unsubscribe();
+      };
     };
     
     checkAuth();
-  }, [toast]);
+  }, [toast, navigate]);
 
   const toggleSidebar = () => {
     setSidebarCollapsed(!sidebarCollapsed);
@@ -110,6 +114,11 @@ const DashboardLayout: React.FC = () => {
     setUserData(newUserData);
     
     navigate('/dashboard/home');
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    // The onAuthStateChange listener will handle the rest
   };
 
   // Show loading state
@@ -127,6 +136,10 @@ const DashboardLayout: React.FC = () => {
   if (!isAuthenticated) {
     return (
       <div className="bg-codechatter-darker min-h-screen flex flex-col items-center justify-center p-4">
+        <div className="mb-8 text-center">
+          <h2 className="text-white text-xl mb-2">Login Required</h2>
+          <p className="text-white/60 mb-4">Please sign in to access your dashboard</p>
+        </div>
         <AuthForm onSuccess={handleAuthSuccess} />
       </div>
     );
@@ -138,6 +151,7 @@ const DashboardLayout: React.FC = () => {
         collapsed={sidebarCollapsed} 
         toggleSidebar={toggleSidebar}
         userData={userData}
+        onSignOut={handleSignOut}
       />
       <main className="flex-1 overflow-y-auto">
         <Outlet context={userData} />

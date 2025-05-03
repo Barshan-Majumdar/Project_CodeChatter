@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
-import { LogIn, UserPlus, Mail, Lock, User, Github, User2 } from 'lucide-react';
+import { LogIn, UserPlus, Mail, Lock, User, Github } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from "@/integrations/supabase/client";
 
@@ -55,6 +55,15 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
       return;
     }
 
+    if (signUpPassword.length < 6) {
+      toast({
+        title: "Error",
+        description: "Password must be at least 6 characters long.",
+        variant: "destructive"
+      });
+      return;
+    }
+
     setIsLoading(true);
     
     try {
@@ -73,26 +82,41 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
         throw error;
       }
 
+      // Check if email confirmation is required
+      if (data.user && !data.session) {
+        toast({
+          title: "Verification Required",
+          description: "Please check your email for a verification link to complete your registration.",
+        });
+        return;
+      }
+      
       // Store user data in localStorage for the dashboard
-      const userData = { name: signUpName, email: signUpEmail };
-      localStorage.setItem('user-data', JSON.stringify(userData));
-      localStorage.setItem('auth-token', data.session?.access_token || 'demo-token');
+      if (data.user) {
+        const userData = { name: signUpName, email: signUpEmail };
+        localStorage.setItem('user-data', JSON.stringify(userData));
+        
+        if (data.session?.access_token) {
+          localStorage.setItem('auth-token', data.session.access_token);
+        }
+      }
 
       toast({
         title: "Account Created",
-        description: "Welcome to CodeChatter! Check your email to verify your account.",
+        description: "Welcome to CodeChatter!",
       });
       
       // Pass user name and email to the onSuccess callback
-      if (onSuccess) {
+      if (onSuccess && data.user) {
         onSuccess(signUpName, signUpEmail);
       } else {
         navigate('/dashboard/home');
       }
     } catch (error: any) {
+      console.error("Sign up error:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create account",
+        description: error.error_description || error.message || "Failed to create account",
         variant: "destructive"
       });
     } finally {
@@ -126,29 +150,35 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
         throw error;
       }
 
-      // Get user data from metadata
-      const fullName = data.user?.user_metadata?.full_name || signInEmail.split('@')[0];
+      if (data.user) {
+        // Get user data from metadata
+        const fullName = data.user.user_metadata?.full_name || signInEmail.split('@')[0];
 
-      // Store user data for the dashboard
-      const userData = { name: fullName, email: signInEmail };
-      localStorage.setItem('user-data', JSON.stringify(userData));
-      localStorage.setItem('auth-token', data.session?.access_token || 'demo-token');
-      
-      toast({
-        title: "Signed In",
-        description: "Welcome back to CodeChatter!",
-      });
-      
-      // Pass user name and email to the onSuccess callback
-      if (onSuccess) {
-        onSuccess(fullName, signInEmail);
-      } else {
-        navigate('/dashboard/home');
+        // Store user data for the dashboard
+        const userData = { name: fullName, email: signInEmail };
+        localStorage.setItem('user-data', JSON.stringify(userData));
+        
+        if (data.session?.access_token) {
+          localStorage.setItem('auth-token', data.session.access_token);
+        }
+        
+        toast({
+          title: "Signed In",
+          description: "Welcome back to CodeChatter!",
+        });
+        
+        // Pass user name and email to the onSuccess callback
+        if (onSuccess) {
+          onSuccess(fullName, signInEmail);
+        } else {
+          navigate('/dashboard/home');
+        }
       }
     } catch (error: any) {
+      console.error("Sign in error:", error);
       toast({
-        title: "Error",
-        description: error.message || "Failed to sign in",
+        title: "Authentication Failed",
+        description: error.error_description || error.message || "Invalid email or password",
         variant: "destructive"
       });
     } finally {
@@ -160,6 +190,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
     setIsLoading(true);
     
     try {
+      const redirectURL = `${window.location.origin}/dashboard/home`;
+      
       let { data, error } = {} as any;
       
       // Handle different social providers
@@ -168,7 +200,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
           ({ data, error } = await supabase.auth.signInWithOAuth({
             provider: 'github',
             options: {
-              redirectTo: `${window.location.origin}/dashboard/home`
+              redirectTo: redirectURL
             }
           }));
           break;
@@ -176,7 +208,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
           ({ data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
-              redirectTo: `${window.location.origin}/dashboard/home`
+              redirectTo: redirectURL
             }
           }));
           break;
@@ -184,7 +216,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
           ({ data, error } = await supabase.auth.signInWithOAuth({
             provider: 'azure',
             options: {
-              redirectTo: `${window.location.origin}/dashboard/home`
+              redirectTo: redirectURL
             }
           }));
           break;
@@ -202,9 +234,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
         description: "Redirecting to authentication provider...",
       });
     } catch (error: any) {
+      console.error("OAuth error:", error);
       toast({
-        title: "Error",
-        description: error.message || `Failed to sign in with ${provider}`,
+        title: "Authentication Error",
+        description: error.error_description || error.message || `Failed to sign in with ${provider}`,
         variant: "destructive"
       });
       setIsLoading(false);
@@ -390,6 +423,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
                     value={signUpPassword}
                     onChange={(e) => setSignUpPassword(e.target.value)}
                     required
+                    minLength={6}
                   />
                 </div>
               </div>
@@ -405,6 +439,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
                     value={signUpConfirmPassword}
                     onChange={(e) => setSignUpConfirmPassword(e.target.value)}
                     required
+                    minLength={6}
                   />
                 </div>
               </div>

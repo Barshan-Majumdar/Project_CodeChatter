@@ -1,5 +1,5 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Code } from 'lucide-react';
 import AuthForm from '@/components/auth/AuthForm';
 import { useSearchParams, useNavigate } from 'react-router-dom';
@@ -9,15 +9,23 @@ const Login: React.FC = () => {
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get('tab') || 'sign-in';
   const navigate = useNavigate();
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   // Check if the user is already authenticated
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session) {
-        // If user is already logged in, redirect to dashboard
-        navigate('/dashboard/home');
+      setIsCheckingAuth(true);
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          // If user is already logged in, redirect to dashboard
+          navigate('/dashboard/home');
+        }
+      } catch (error) {
+        console.error('Error checking authentication:', error);
+      } finally {
+        setIsCheckingAuth(false);
       }
     };
     
@@ -27,6 +35,17 @@ const Login: React.FC = () => {
   const handleAuthSuccess = (name: string, email: string) => {
     navigate('/dashboard/home');
   };
+
+  if (isCheckingAuth) {
+    return (
+      <div className="bg-codechatter-darker min-h-screen flex items-center justify-center">
+        <div className="text-white text-center">
+          <div className="animate-spin h-8 w-8 border-4 border-t-codechatter-purple border-codechatter-blue/30 rounded-full mx-auto mb-4"></div>
+          <p>Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="bg-codechatter-darker min-h-screen flex flex-col items-center justify-center p-4">

@@ -1,8 +1,7 @@
-
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Code, Home, BookOpen, MessageSquare, Users, Award, Settings, ChevronLeft, ChevronRight, Bell } from 'lucide-react';
+import { Code, Home, BookOpen, MessageSquare, Users, Award, Settings, ChevronLeft, ChevronRight, Bell, User2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import SearchProblem from './SearchProblem';
 
@@ -14,10 +13,14 @@ interface UserData {
 interface SidebarProps {
   collapsed: boolean;
   toggleSidebar: () => void;
-  userData: UserData;
+  userData: {
+    name: string;
+    email: string;
+  };
+  onSignOut?: () => void;
 }
 
-const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar, userData }) => {
+const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar, userData, onSignOut }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const currentPath = location.pathname;
@@ -63,11 +66,19 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar, userData })
     navigate('/');
   };
 
+  // Add sign out handler
+  const handleSignOut = (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (onSignOut) {
+      onSignOut();
+    }
+  };
+
   return (
     <div
       className={cn(
         'h-screen bg-codechatter-dark border-r border-codechatter-blue/20 transition-all duration-300 flex flex-col',
-        collapsed ? 'w-[70px]' : 'w-[240px]'
+        collapsed ? 'w-[80px]' : 'w-[250px]'
       )}
     >
       {/* Sidebar Header */}
@@ -95,7 +106,7 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar, userData })
       </div>
 
       {/* Navigation Links */}
-      <div className="flex-1 overflow-y-auto pt-4">
+      <div className="flex-1 overflow-y-auto py-2 scrollbar-thin scrollbar-thumb-codechatter-blue/20">
         <div className="px-3">
           <Button
             className="w-full mb-4 bg-gradient-to-r from-codechatter-blue to-codechatter-purple hover:opacity-90"
@@ -134,21 +145,22 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar, userData })
       </div>
 
       {/* User Profile */}
-      <div className="p-3 border-t border-codechatter-blue/20">
-        <div className="flex items-center p-2 rounded-lg hover:bg-white/5 cursor-pointer transition-colors">
-          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-codechatter-blue to-codechatter-purple flex items-center justify-center text-white font-medium">
-            {userInitial}
+      <div className={`border-t border-codechatter-blue/20 p-4 ${collapsed ? 'text-center' : ''}`}>
+        <div className="flex items-center">
+          <div className={`bg-codechatter-blue/20 rounded-full h-10 w-10 flex items-center justify-center ${collapsed ? 'mx-auto' : 'mr-3'}`}>
+            <User2 size={20} className="text-white/70" />
           </div>
+          
           {!collapsed && (
-            <div className="ml-3 overflow-hidden">
-              <p className="text-sm font-medium text-white truncate">{userData.name}</p>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-medium text-white truncate">{userData.name}</h3>
               <p className="text-xs text-white/60 truncate">{userData.email}</p>
-            </div>
-          )}
-          {!collapsed && (
-            <div className="ml-auto relative">
-              <Bell size={16} className="text-white/60" />
-              <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
+              <button 
+                onClick={handleSignOut}
+                className="text-xs text-codechatter-blue hover:underline mt-1"
+              >
+                Sign Out
+              </button>
             </div>
           )}
         </div>
