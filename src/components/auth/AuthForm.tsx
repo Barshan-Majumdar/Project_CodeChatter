@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn, UserPlus, Mail, Lock, User, Github, User2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from "@/integrations/supabase/client";
 
 interface AuthFormProps {
   onSuccess?: (name: string, email: string) => void;
@@ -55,11 +57,30 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
 
     setIsLoading(true);
     
-    // In a real app, this would call Supabase to create a new user
-    setTimeout(() => {
+    try {
+      // Create a new user in Supabase
+      const { data, error } = await supabase.auth.signUp({
+        email: signUpEmail,
+        password: signUpPassword,
+        options: {
+          data: {
+            full_name: signUpName,
+          },
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      // Store user data in localStorage for the dashboard
+      const userData = { name: signUpName, email: signUpEmail };
+      localStorage.setItem('user-data', JSON.stringify(userData));
+      localStorage.setItem('auth-token', data.session?.access_token || 'demo-token');
+
       toast({
         title: "Account Created",
-        description: "Welcome to CodeChatter! You have successfully created an account.",
+        description: "Welcome to CodeChatter! Check your email to verify your account.",
       });
       
       // Pass user name and email to the onSuccess callback
@@ -68,9 +89,15 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
       } else {
         navigate('/dashboard/home');
       }
-      
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create account",
+        variant: "destructive"
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleSignIn = async (e: React.FormEvent) => {
@@ -88,14 +115,24 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
 
     setIsLoading(true);
     
-    // In a real app, this would call Supabase to authenticate the user
-    // For now, we'll simulate a successful sign in with a default user name
-    setTimeout(() => {
-      // For demo purposes, extract a user name from the email
-      const defaultName = signInEmail.split('@')[0].replace(/[^a-zA-Z0-9]/g, ' ')
-        .split(' ')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-        .join(' ');
+    try {
+      // Sign in with Supabase
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: signInEmail,
+        password: signInPassword,
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      // Get user data from metadata
+      const fullName = data.user?.user_metadata?.full_name || signInEmail.split('@')[0];
+
+      // Store user data for the dashboard
+      const userData = { name: fullName, email: signInEmail };
+      localStorage.setItem('user-data', JSON.stringify(userData));
+      localStorage.setItem('auth-token', data.session?.access_token || 'demo-token');
       
       toast({
         title: "Signed In",
@@ -104,45 +141,74 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
       
       // Pass user name and email to the onSuccess callback
       if (onSuccess) {
-        onSuccess(defaultName, signInEmail);
+        onSuccess(fullName, signInEmail);
       } else {
         navigate('/dashboard/home');
       }
-      
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to sign in",
+        variant: "destructive"
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
-  const handleSocialSignIn = (provider: string) => {
+  const handleSocialSignIn = async (provider: string) => {
     setIsLoading(true);
     
-    toast({
-      title: `Signing in with ${provider}`,
-      description: "Redirecting to authentication provider...",
-    });
-    
-    // In a real app, this would call Supabase to authenticate with social provider
-    // For now, we'll simulate a successful sign in
-    setTimeout(() => {
-      const mockUserData = {
-        name: `${provider} User`,
-        email: `user@${provider.toLowerCase()}.example`
-      };
+    try {
+      let { data, error } = {} as any;
       
-      toast({
-        title: "Signed In",
-        description: `Welcome back to CodeChatter! Authenticated with ${provider}.`,
-      });
-      
-      // Pass user name and email to the onSuccess callback
-      if (onSuccess) {
-        onSuccess(mockUserData.name, mockUserData.email);
-      } else {
-        navigate('/dashboard/home');
+      // Handle different social providers
+      switch (provider.toLowerCase()) {
+        case 'github':
+          ({ data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'github',
+            options: {
+              redirectTo: `${window.location.origin}/dashboard/home`
+            }
+          }));
+          break;
+        case 'google':
+          ({ data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+              redirectTo: `${window.location.origin}/dashboard/home`
+            }
+          }));
+          break;
+        case 'microsoft':
+          ({ data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'azure',
+            options: {
+              redirectTo: `${window.location.origin}/dashboard/home`
+            }
+          }));
+          break;
+        default:
+          throw new Error(`Unsupported provider: ${provider}`);
       }
       
+      if (error) {
+        throw error;
+      }
+      
+      // The OAuth flow will redirect the user away from the application
+      toast({
+        title: `Signing in with ${provider}`,
+        description: "Redirecting to authentication provider...",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || `Failed to sign in with ${provider}`,
+        variant: "destructive"
+      });
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   return (

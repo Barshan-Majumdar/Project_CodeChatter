@@ -2,11 +2,31 @@
 import React, { useEffect } from 'react';
 import { Code } from 'lucide-react';
 import AuthForm from '@/components/auth/AuthForm';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 const Login: React.FC = () => {
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get('tab') || 'sign-in';
+  const navigate = useNavigate();
+
+  // Check if the user is already authenticated
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (session) {
+        // If user is already logged in, redirect to dashboard
+        navigate('/dashboard/home');
+      }
+    };
+    
+    checkAuth();
+  }, [navigate]);
+
+  const handleAuthSuccess = (name: string, email: string) => {
+    navigate('/dashboard/home');
+  };
 
   return (
     <div className="bg-codechatter-darker min-h-screen flex flex-col items-center justify-center p-4">
@@ -20,7 +40,7 @@ const Login: React.FC = () => {
         <p className="text-white/60">Code. Connect. Compete.</p>
       </div>
       
-      <AuthForm defaultTab={defaultTab} />
+      <AuthForm defaultTab={defaultTab} onSuccess={handleAuthSuccess} />
       
       <p className="mt-8 text-white/40 text-sm text-center max-w-md">
         CodeChatter combines competitive coding with social networking to create a unique platform for developers to learn, share, and grow together.
