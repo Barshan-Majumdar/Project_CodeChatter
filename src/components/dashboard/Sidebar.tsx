@@ -1,6 +1,5 @@
-
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Code, Home, BookOpen, MessageSquare, Users, Award, Settings, ChevronLeft, ChevronRight, Bell } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -13,6 +12,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
   const location = useLocation();
+  const navigate = useNavigate();
   const currentPath = location.pathname;
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   
@@ -48,6 +48,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
       path: '/dashboard/settings'
     },
   ];
+  
+  const handleLogoClick = () => {
+    navigate('/');
+  };
 
   return (
     <div
@@ -57,7 +61,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
       )}
     >
       {/* Sidebar Header */}
-      <div className="flex items-center p-4 border-b border-codechatter-blue/20">
+      <div 
+        className="flex items-center p-4 border-b border-codechatter-blue/20 cursor-pointer"
+        onClick={handleLogoClick}
+      >
         <Code size={24} className="text-codechatter-blue" />
         {!collapsed && (
           <span className="ml-2 text-xl font-bold bg-gradient-to-r from-codechatter-blue to-codechatter-purple bg-clip-text text-transparent">
@@ -68,7 +75,10 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar }) => {
           variant="ghost"
           size="icon"
           className="ml-auto text-white/60 hover:text-white hover:bg-white/10"
-          onClick={toggleSidebar}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleSidebar();
+          }}
         >
           {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </Button>

@@ -20,16 +20,23 @@ const Navbar: React.FC = () => {
     navigate('/login?tab=sign-up');
   };
 
+  const handleLogoClick = () => {
+    navigate('/');
+  };
+
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 bg-codechatter-dark/80 backdrop-blur-md border-b border-codechatter-blue/20">
       <div className="container mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
-          <Link to="/" className="flex items-center space-x-2">
+          <div 
+            onClick={handleLogoClick} 
+            className="flex items-center space-x-2 cursor-pointer"
+          >
             <Code size={24} className="text-codechatter-blue" />
             <span className="text-xl font-bold bg-gradient-to-r from-codechatter-blue to-codechatter-purple bg-clip-text text-transparent">
               CodeChatter
             </span>
-          </Link>
+          </div>
           
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-8">
