@@ -50,18 +50,29 @@ const DashboardLayout: React.FC = () => {
               title: "Authentication Successful",
               description: `Welcome to your CodeChatter dashboard, ${fullName}!`,
             });
-          } else if (event === 'SIGNED_OUT' || event === 'USER_DELETED') {
+          } else if (event === 'SIGNED_OUT') {
             setIsAuthenticated(false);
             setUserData({ name: '', email: '' });
             localStorage.removeItem('auth-token');
             localStorage.removeItem('user-data');
             
-            if (event === 'SIGNED_OUT') {
-              toast({
-                title: "Signed Out",
-                description: "You have been signed out of CodeChatter.",
-              });
-              navigate('/login');
+            toast({
+              title: "Signed Out",
+              description: "You have been signed out of CodeChatter.",
+            });
+            navigate('/login');
+          } else if (event === 'USER_UPDATED') {
+            if (session) {
+              const fullName = session.user.user_metadata?.full_name || 
+                session.user.email?.split('@')[0] || '';
+              
+              const newUserData = { 
+                name: fullName,
+                email: session.user.email || ''
+              };
+              
+              setUserData(newUserData);
+              localStorage.setItem('user-data', JSON.stringify(newUserData));
             }
           }
         }

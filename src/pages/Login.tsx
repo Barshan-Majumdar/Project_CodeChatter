@@ -4,11 +4,13 @@ import { Code } from 'lucide-react';
 import AuthForm from '@/components/auth/AuthForm';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 const Login: React.FC = () => {
   const [searchParams] = useSearchParams();
   const defaultTab = searchParams.get('tab') || 'sign-in';
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   // Check if the user is already authenticated
@@ -20,17 +22,26 @@ const Login: React.FC = () => {
         
         if (session) {
           // If user is already logged in, redirect to dashboard
+          toast({
+            title: "Already Authenticated",
+            description: "You are already logged in. Redirecting to dashboard...",
+          });
           navigate('/dashboard/home');
         }
       } catch (error) {
         console.error('Error checking authentication:', error);
+        toast({
+          title: "Authentication Error",
+          description: "There was an error checking your authentication status.",
+          variant: "destructive"
+        });
       } finally {
         setIsCheckingAuth(false);
       }
     };
     
     checkAuth();
-  }, [navigate]);
+  }, [navigate, toast]);
 
   const handleAuthSuccess = (name: string, email: string) => {
     navigate('/dashboard/home');

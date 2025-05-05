@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
 import { LogIn, UserPlus, Mail, Lock, User, Github } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -32,6 +31,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
   
   // Loading state
   const [isLoading, setIsLoading] = useState(false);
+  const [socialLoginInProgress, setSocialLoginInProgress] = useState('');
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -187,42 +187,50 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
   };
 
   const handleSocialSignIn = async (provider: string) => {
+    // Prevent multiple clicks while processing
+    if (socialLoginInProgress) {
+      return;
+    }
+    
+    setSocialLoginInProgress(provider);
     setIsLoading(true);
     
     try {
       const redirectURL = `${window.location.origin}/dashboard/home`;
       
-      let { data, error } = {} as any;
+      let result;
       
       // Handle different social providers
       switch (provider.toLowerCase()) {
         case 'github':
-          ({ data, error } = await supabase.auth.signInWithOAuth({
+          result = await supabase.auth.signInWithOAuth({
             provider: 'github',
             options: {
               redirectTo: redirectURL
             }
-          }));
+          });
           break;
         case 'google':
-          ({ data, error } = await supabase.auth.signInWithOAuth({
+          result = await supabase.auth.signInWithOAuth({
             provider: 'google',
             options: {
               redirectTo: redirectURL
             }
-          }));
+          });
           break;
         case 'microsoft':
-          ({ data, error } = await supabase.auth.signInWithOAuth({
+          result = await supabase.auth.signInWithOAuth({
             provider: 'azure',
             options: {
               redirectTo: redirectURL
             }
-          }));
+          });
           break;
         default:
           throw new Error(`Unsupported provider: ${provider}`);
       }
+      
+      const { error } = result;
       
       if (error) {
         throw error;
@@ -233,14 +241,17 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
         title: `Signing in with ${provider}`,
         description: "Redirecting to authentication provider...",
       });
+      
+      // No need to clear states as the page will redirect
     } catch (error: any) {
       console.error("OAuth error:", error);
       toast({
         title: "Authentication Error",
-        description: error.error_description || error.message || `Failed to sign in with ${provider}`,
+        description: error.error_description || error.message || `Failed to sign in with ${provider}. Make sure the provider is enabled in Supabase.`,
         variant: "destructive"
       });
       setIsLoading(false);
+      setSocialLoginInProgress('');
     }
   };
 
@@ -320,15 +331,16 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
                   variant="outline"
                   className="bg-codechatter-darker border-codechatter-blue/20 hover:bg-codechatter-blue/10"
                   onClick={() => handleSocialSignIn("GitHub")}
-                  disabled={isLoading}
+                  disabled={isLoading || socialLoginInProgress !== ''}
                 >
-                  <Github className="mr-2" size={16} /> GitHub
+                  <Github className="mr-2" size={16} />
+                  {socialLoginInProgress === 'github' ? '...' : 'GitHub'}
                 </Button>
                 <Button 
                   variant="outline"
                   className="bg-codechatter-darker border-codechatter-blue/20 hover:bg-codechatter-blue/10"
                   onClick={() => handleSocialSignIn("Google")}
-                  disabled={isLoading}
+                  disabled={isLoading || socialLoginInProgress !== ''}
                 >
                   <svg className="mr-2" width="16" height="16" viewBox="0 0 24 24">
                     <path
@@ -348,13 +360,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
                       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                     />
                   </svg>
-                  Google
+                  {socialLoginInProgress === 'google' ? '...' : 'Google'}
                 </Button>
                 <Button 
                   variant="outline"
                   className="bg-codechatter-darker border-codechatter-blue/20 hover:bg-codechatter-blue/10"
                   onClick={() => handleSocialSignIn("Microsoft")}
-                  disabled={isLoading}
+                  disabled={isLoading || socialLoginInProgress !== ''}
                 >
                   <svg className="mr-2" width="16" height="16" viewBox="0 0 23 23">
                     <path fill="#f3f3f3" d="M0 0h23v23H0z" />
@@ -363,7 +375,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
                     <path fill="#05a6f0" d="M1 12h10v10H1z" />
                     <path fill="#ffba08" d="M12 12h10v10H12z" />
                   </svg>
-                  MS
+                  {socialLoginInProgress === 'microsoft' ? '...' : 'MS'}
                 </Button>
               </div>
             </CardFooter>
@@ -469,15 +481,16 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
                   variant="outline"
                   className="bg-codechatter-darker border-codechatter-blue/20 hover:bg-codechatter-blue/10"
                   onClick={() => handleSocialSignIn("GitHub")}
-                  disabled={isLoading}
+                  disabled={isLoading || socialLoginInProgress !== ''}
                 >
-                  <Github className="mr-2" size={16} /> GitHub
+                  <Github className="mr-2" size={16} />
+                  {socialLoginInProgress === 'github' ? '...' : 'GitHub'}
                 </Button>
                 <Button 
                   variant="outline"
                   className="bg-codechatter-darker border-codechatter-blue/20 hover:bg-codechatter-blue/10"
                   onClick={() => handleSocialSignIn("Google")}
-                  disabled={isLoading}
+                  disabled={isLoading || socialLoginInProgress !== ''}
                 >
                   <svg className="mr-2" width="16" height="16" viewBox="0 0 24 24">
                     <path
@@ -497,13 +510,13 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
                       d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
                     />
                   </svg>
-                  Google
+                  {socialLoginInProgress === 'google' ? '...' : 'Google'}
                 </Button>
                 <Button 
                   variant="outline"
                   className="bg-codechatter-darker border-codechatter-blue/20 hover:bg-codechatter-blue/10"
                   onClick={() => handleSocialSignIn("Microsoft")}
-                  disabled={isLoading}
+                  disabled={isLoading || socialLoginInProgress !== ''}
                 >
                   <svg className="mr-2" width="16" height="16" viewBox="0 0 23 23">
                     <path fill="#f3f3f3" d="M0 0h23v23H0z" />
@@ -512,7 +525,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
                     <path fill="#05a6f0" d="M1 12h10v10H1z" />
                     <path fill="#ffba08" d="M12 12h10v10H12z" />
                   </svg>
-                  MS
+                  {socialLoginInProgress === 'microsoft' ? '...' : 'MS'}
                 </Button>
               </div>
               
