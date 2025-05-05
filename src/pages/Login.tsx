@@ -1,10 +1,11 @@
 
 import React, { useEffect, useState } from 'react';
-import { Code } from 'lucide-react';
+import { Code, AlertCircle } from 'lucide-react';
 import AuthForm from '@/components/auth/AuthForm';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 const Login: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -12,13 +13,20 @@ const Login: React.FC = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   // Check if the user is already authenticated
   useEffect(() => {
     const checkAuth = async () => {
       setIsCheckingAuth(true);
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Error checking session:', error);
+          setAuthError('Unable to check authentication status. Please try again.');
+          return;
+        }
         
         if (session) {
           // If user is already logged in, redirect to dashboard
@@ -30,11 +38,7 @@ const Login: React.FC = () => {
         }
       } catch (error) {
         console.error('Error checking authentication:', error);
-        toast({
-          title: "Authentication Error",
-          description: "There was an error checking your authentication status.",
-          variant: "destructive"
-        });
+        setAuthError('There was an error checking your authentication status.');
       } finally {
         setIsCheckingAuth(false);
       }
@@ -70,11 +74,25 @@ const Login: React.FC = () => {
         <p className="text-white/60">Code. Connect. Compete.</p>
       </div>
       
+      {authError && (
+        <Alert variant="destructive" className="mb-4 max-w-md">
+          <AlertCircle className="h-4 w-4" />
+          <AlertTitle>Authentication Error</AlertTitle>
+          <AlertDescription>{authError}</AlertDescription>
+        </Alert>
+      )}
+      
       <AuthForm defaultTab={defaultTab} onSuccess={handleAuthSuccess} />
       
-      <p className="mt-8 text-white/40 text-sm text-center max-w-md">
-        CodeChatter combines competitive coding with social networking to create a unique platform for developers to learn, share, and grow together.
-      </p>
+      <div className="mt-8 text-white/40 text-sm text-center max-w-md">
+        <p className="mb-2">
+          CodeChatter combines competitive coding with social networking to create a unique platform for developers to learn, share, and grow together.
+        </p>
+        <p className="text-xs text-white/30">
+          Note: To use social login methods (GitHub, Google, Microsoft), 
+          these providers must be configured in your Supabase project settings.
+        </p>
+      </div>
     </div>
   );
 };

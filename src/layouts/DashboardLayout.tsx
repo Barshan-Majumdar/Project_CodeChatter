@@ -5,6 +5,7 @@ import Sidebar from '@/components/dashboard/Sidebar';
 import { useToast } from '@/hooks/use-toast';
 import AuthForm from '@/components/auth/AuthForm';
 import { supabase } from '@/integrations/supabase/client';
+import { User } from '@supabase/supabase-js';
 
 interface UserData {
   name: string;
@@ -78,32 +79,51 @@ const DashboardLayout: React.FC = () => {
         }
       );
 
-      // THEN check for existing session
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (session) {
-        const fullName = session.user.user_metadata?.full_name || 
-          session.user.email?.split('@')[0] || '';
+      try {
+        // THEN check for existing session
+        const { data: { session }, error } = await supabase.auth.getSession();
         
-        const newUserData = { 
-          name: fullName,
-          email: session.user.email || ''
-        };
+        if (error) {
+          throw error;
+        }
         
-        setUserData(newUserData);
-        setIsAuthenticated(true);
+        if (session) {
+          const fullName = session.user.user_metadata?.full_name || 
+            session.user.email?.split('@')[0] || '';
+          
+          const newUserData = { 
+            name: fullName,
+            email: session.user.email || ''
+          };
+          
+          setUserData(newUserData);
+          setIsAuthenticated(true);
+          
+          // Update stored user data if needed
+          localStorage.setItem('user-data', JSON.stringify(newUserData));
+          localStorage.setItem('auth-token', session.access_token);
+        } else {
+          // Clear any potentially stale data
+          localStorage.removeItem('auth-token');
+          localStorage.removeItem('user-data');
+          setIsAuthenticated(false);
+          
+          // Redirect to login if no session is found
+          navigate('/login');
+        }
+      } catch (error) {
+        console.error('Error checking authentication:', error);
+        toast({
+          title: "Authentication Error",
+          description: "There was an error checking your authentication status.",
+          variant: "destructive"
+        });
         
-        // Update stored user data if needed
-        localStorage.setItem('user-data', JSON.stringify(newUserData));
-        localStorage.setItem('auth-token', session.access_token);
-      } else {
-        // Clear any potentially stale data
-        localStorage.removeItem('auth-token');
-        localStorage.removeItem('user-data');
-        setIsAuthenticated(false);
+        // Safety fallback - redirect to login on error
+        navigate('/login');
+      } finally {
+        setIsLoading(false);
       }
-      
-      setIsLoading(false);
       
       return () => {
         subscription.unsubscribe();
@@ -128,8 +148,17 @@ const DashboardLayout: React.FC = () => {
   };
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-    // The onAuthStateChange listener will handle the rest
+    try {
+      await supabase.auth.signOut();
+      // The onAuthStateChange listener will handle the rest
+    } catch (error) {
+      console.error('Error signing out:', error);
+      toast({
+        title: "Sign Out Error",
+        description: "There was a problem signing you out. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   // Show loading state

@@ -192,12 +192,17 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
       return;
     }
     
-    setSocialLoginInProgress(provider);
+    setSocialLoginInProgress(provider.toLowerCase());
     setIsLoading(true);
     
     try {
-      const redirectURL = `${window.location.origin}/dashboard/home`;
+      const redirectURL = window.location.origin + '/dashboard/home';
       
+      toast({
+        title: `Signing in with ${provider}`,
+        description: "Connecting to authentication provider...",
+      });
+
       let result;
       
       // Handle different social providers
@@ -233,21 +238,19 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
       const { error } = result;
       
       if (error) {
+        if (error.message.includes('provider is not enabled')) {
+          throw new Error(`The ${provider} authentication provider is not enabled in your Supabase project. Please configure it in the Supabase dashboard under Authentication > Providers.`);
+        }
         throw error;
       }
       
       // The OAuth flow will redirect the user away from the application
-      toast({
-        title: `Signing in with ${provider}`,
-        description: "Redirecting to authentication provider...",
-      });
-      
       // No need to clear states as the page will redirect
     } catch (error: any) {
       console.error("OAuth error:", error);
       toast({
         title: "Authentication Error",
-        description: error.error_description || error.message || `Failed to sign in with ${provider}. Make sure the provider is enabled in Supabase.`,
+        description: error.message || `Failed to sign in with ${provider}.`,
         variant: "destructive"
       });
       setIsLoading(false);
@@ -312,7 +315,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
                 className="w-full bg-gradient-to-r from-codechatter-blue to-codechatter-purple hover:opacity-90"
                 disabled={isLoading}
               >
-                {isLoading ? "Signing In..." : "Sign In"}
+                {isLoading && !socialLoginInProgress ? "Signing In..." : "Sign In"}
               </Button>
 
               <div className="w-full">
@@ -331,7 +334,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
                   variant="outline"
                   className="bg-codechatter-darker border-codechatter-blue/20 hover:bg-codechatter-blue/10"
                   onClick={() => handleSocialSignIn("GitHub")}
-                  disabled={isLoading || socialLoginInProgress !== ''}
+                  disabled={isLoading}
                 >
                   <Github className="mr-2" size={16} />
                   {socialLoginInProgress === 'github' ? '...' : 'GitHub'}
@@ -340,7 +343,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
                   variant="outline"
                   className="bg-codechatter-darker border-codechatter-blue/20 hover:bg-codechatter-blue/10"
                   onClick={() => handleSocialSignIn("Google")}
-                  disabled={isLoading || socialLoginInProgress !== ''}
+                  disabled={isLoading}
                 >
                   <svg className="mr-2" width="16" height="16" viewBox="0 0 24 24">
                     <path
@@ -366,7 +369,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
                   variant="outline"
                   className="bg-codechatter-darker border-codechatter-blue/20 hover:bg-codechatter-blue/10"
                   onClick={() => handleSocialSignIn("Microsoft")}
-                  disabled={isLoading || socialLoginInProgress !== ''}
+                  disabled={isLoading}
                 >
                   <svg className="mr-2" width="16" height="16" viewBox="0 0 23 23">
                     <path fill="#f3f3f3" d="M0 0h23v23H0z" />
@@ -462,7 +465,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
                 className="w-full bg-gradient-to-r from-codechatter-blue to-codechatter-purple hover:opacity-90"
                 disabled={isLoading}
               >
-                {isLoading ? "Creating Account..." : "Create Account"}
+                {isLoading && !socialLoginInProgress ? "Creating Account..." : "Create Account"}
               </Button>
 
               <div className="w-full">
@@ -481,7 +484,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
                   variant="outline"
                   className="bg-codechatter-darker border-codechatter-blue/20 hover:bg-codechatter-blue/10"
                   onClick={() => handleSocialSignIn("GitHub")}
-                  disabled={isLoading || socialLoginInProgress !== ''}
+                  disabled={isLoading}
                 >
                   <Github className="mr-2" size={16} />
                   {socialLoginInProgress === 'github' ? '...' : 'GitHub'}
@@ -490,7 +493,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
                   variant="outline"
                   className="bg-codechatter-darker border-codechatter-blue/20 hover:bg-codechatter-blue/10"
                   onClick={() => handleSocialSignIn("Google")}
-                  disabled={isLoading || socialLoginInProgress !== ''}
+                  disabled={isLoading}
                 >
                   <svg className="mr-2" width="16" height="16" viewBox="0 0 24 24">
                     <path
@@ -516,7 +519,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
                   variant="outline"
                   className="bg-codechatter-darker border-codechatter-blue/20 hover:bg-codechatter-blue/10"
                   onClick={() => handleSocialSignIn("Microsoft")}
-                  disabled={isLoading || socialLoginInProgress !== ''}
+                  disabled={isLoading}
                 >
                   <svg className="mr-2" width="16" height="16" viewBox="0 0 23 23">
                     <path fill="#f3f3f3" d="M0 0h23v23H0z" />
