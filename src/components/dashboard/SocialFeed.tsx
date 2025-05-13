@@ -24,13 +24,17 @@ interface Post {
   comments: Comment[];
   isLiked: boolean;
   isBookmarked: boolean;
-  type: 'status' | 'challenge-completion' | 'blog';
+  type: 'status' | 'challenge-completion' | 'blog' | 'problem' | 'media';
   challengeDetails?: {
     title: string;
-    difficulty: 'Easy' | 'Medium' | 'Hard';
+    difficulty?: 'Easy' | 'Medium' | 'Hard';
   };
   blogTitle?: string;
+  mediaUrl?: string;
   showComments?: boolean;
+  backgroundColor?: string;
+  tags?: string[];
+  attachments?: File[];
 }
 
 interface SocialFeedProps {

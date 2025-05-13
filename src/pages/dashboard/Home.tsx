@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,13 +36,17 @@ interface Post {
   comments: Comment[];
   isLiked: boolean;
   isBookmarked: boolean;
-  type: 'status' | 'challenge-completion' | 'blog';
+  type: 'status' | 'challenge-completion' | 'blog' | 'problem' | 'media';
   challengeDetails?: {
     title: string;
-    difficulty: 'Easy' | 'Medium' | 'Hard';
+    difficulty?: 'Easy' | 'Medium' | 'Hard';
   };
   blogTitle?: string;
+  mediaUrl?: string;
   showComments?: boolean;
+  backgroundColor?: string;
+  tags?: string[];
+  attachments?: File[];
 }
 
 const Home: React.FC = () => {

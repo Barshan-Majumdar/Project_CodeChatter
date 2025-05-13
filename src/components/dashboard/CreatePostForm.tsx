@@ -1,10 +1,17 @@
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Send, Image, Code as CodeIcon, Circle, Check } from 'lucide-react';
+import { Send, Image, Code as CodeIcon, Tag, PaintBucket, Upload } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 interface Post {
   id: string;
@@ -21,10 +28,12 @@ interface Post {
   type: 'status' | 'challenge-completion' | 'blog' | 'problem' | 'media';
   challengeDetails?: {
     title: string;
-    difficulty: 'Easy' | 'Medium' | 'Hard';
   };
   blogTitle?: string;
   mediaUrl?: string;
+  backgroundColor?: string;
+  tags?: string[];
+  attachments?: File[];
 }
 
 interface CreatePostFormProps {
@@ -37,7 +46,13 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
   const [isLoading, setIsLoading] = useState(false);
   const [postTab, setPostTab] = useState("text");
   const [problemTitle, setProblemTitle] = useState('');
-  const [difficulty, setDifficulty] = useState<'Easy' | 'Medium' | 'Hard'>('Easy');
+  const [backgroundColor, setBackgroundColor] = useState<string>("");
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const codeFileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -67,15 +82,23 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
       isLiked: false,
       isBookmarked: false,
       type: postTab === "problem" ? 'problem' : 
-            postTab === "media" ? 'media' : 'status'
+            postTab === "media" ? 'media' : 'status',
+      tags: tags.length > 0 ? tags : undefined,
+      backgroundColor: backgroundColor || undefined,
+      attachments: selectedFiles.length > 0 ? selectedFiles : undefined
     };
 
     // Add challenge details if it's a problem post
     if (postTab === "problem" && problemTitle) {
       newPost.challengeDetails = {
-        title: problemTitle,
-        difficulty: difficulty
+        title: problemTitle
       };
+    }
+    
+    // Add media URL if it's a media post and there's a selected file
+    if (postTab === "media" && selectedFiles.length > 0) {
+      // In a real implementation, this would be the URL after upload
+      newPost.mediaUrl = URL.createObjectURL(selectedFiles[0]);
     }
     
     // Simulate a delay for the post creation
@@ -83,6 +106,11 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
       onPostCreated(newPost);
       setContent('');
       setProblemTitle('');
+      setBackgroundColor("");
+      setTags([]);
+      setTagInput("");
+      setSelectedFiles([]);
+      setFilePreview(null);
       setIsLoading(false);
       
       toast({
@@ -94,8 +122,62 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
 
   const handleTabChange = (value: string) => {
     setPostTab(value);
+    setFilePreview(null);
+    setSelectedFiles([]);
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0];
+      setSelectedFiles([file]);
+      
+      // Create a preview for image files
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          if (e.target?.result) {
+            setFilePreview(e.target.result as string);
+          }
+        };
+        reader.readAsDataURL(file);
+      } else {
+        setFilePreview(null);
+      }
+
+      toast({
+        title: "File Selected",
+        description: `${file.name} has been selected for upload.`
+      });
+    }
+  };
+
+  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && tagInput.trim()) {
+      e.preventDefault();
+      if (!tags.includes(tagInput.trim())) {
+        setTags([...tags, tagInput.trim()]);
+      }
+      setTagInput("");
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setTags(tags.filter(tag => tag !== tagToRemove));
+  };
+
+  const backgroundOptions = [
+    { value: "", label: "No Background", color: "transparent" },
+    { value: "bg-blue-500 bg-opacity-20", label: "Blue", color: "#3b82f6" },
+    { value: "bg-green-500 bg-opacity-20", label: "Green", color: "#22c55e" },
+    { value: "bg-yellow-500 bg-opacity-20", label: "Yellow", color: "#eab308" },
+    { value: "bg-red-500 bg-opacity-20", label: "Red", color: "#ef4444" },
+    { value: "bg-purple-500 bg-opacity-20", label: "Purple", color: "#a855f7" },
+    { value: "bg-pink-500 bg-opacity-20", label: "Pink", color: "#ec4899" },
+    { value: "bg-gradient-to-r from-blue-500 to-purple-500 bg-opacity-20", label: "Blue to Purple", color: "linear-gradient" },
+    { value: "bg-gradient-to-r from-green-500 to-blue-500 bg-opacity-20", label: "Green to Blue", color: "linear-gradient" },
+    { value: "bg-gradient-to-r from-yellow-500 to-red-500 bg-opacity-20", label: "Yellow to Red", color: "linear-gradient" },
+  ];
+  
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="flex items-start gap-3">
@@ -111,12 +193,72 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
             </TabsList>
 
             <TabsContent value="text" className="mt-0">
-              <Textarea
-                placeholder="Share what you're working on or thinking about..."
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="min-h-[100px] bg-codechatter-darker border-codechatter-blue/20 resize-none"
-              />
+              <div 
+                className={`rounded-md overflow-hidden ${backgroundColor}`}
+              >
+                <Textarea
+                  placeholder="Share what you're working on or thinking about..."
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  className={`min-h-[100px] bg-codechatter-darker border-codechatter-blue/20 resize-none ${backgroundColor && 'bg-opacity-50'}`}
+                />
+              </div>
+
+              {/* Background Selector */}
+              <div className="mt-2 flex items-center gap-2">
+                <div className="flex items-center gap-1 text-white/60">
+                  <PaintBucket size={16} />
+                  <span className="text-sm">Background:</span>
+                </div>
+                <div className="flex gap-1">
+                  {backgroundOptions.map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`w-6 h-6 rounded-full ${option.value === backgroundColor ? 'ring-2 ring-white ring-offset-2 ring-offset-codechatter-dark' : ''}`}
+                      style={{ 
+                        background: option.color,
+                        border: option.value === "" ? '1px solid rgba(255,255,255,0.2)' : 'none' 
+                      }}
+                      onClick={() => setBackgroundColor(option.value)}
+                      title={option.label}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Tag People Section */}
+              <div className="mt-2">
+                <div className="flex items-center gap-2 mb-1">
+                  <Tag size={16} className="text-white/60" />
+                  <span className="text-sm text-white/60">Tag People:</span>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 mb-2">
+                  {tags.map((tag) => (
+                    <div 
+                      key={tag}
+                      className="px-2 py-1 bg-codechatter-blue/30 rounded-full flex items-center gap-1"
+                    >
+                      <span className="text-sm">{tag}</span>
+                      <button 
+                        type="button" 
+                        onClick={() => removeTag(tag)}
+                        className="text-white/60 hover:text-white"
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                  <input
+                    type="text"
+                    placeholder="Type a name and press Enter"
+                    value={tagInput}
+                    onChange={e => setTagInput(e.target.value)}
+                    onKeyDown={handleTagKeyDown}
+                    className="bg-transparent border-none outline-none text-sm flex-1 min-w-[150px] text-white"
+                  />
+                </div>
+              </div>
             </TabsContent>
 
             <TabsContent value="problem" className="mt-0 space-y-3">
@@ -128,12 +270,6 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
                   onChange={(e) => setProblemTitle(e.target.value)}
                   className="flex-1 h-10 px-3 rounded-md bg-codechatter-darker border border-codechatter-blue/20 text-white"
                 />
-                <div className="flex items-center gap-2">
-                  <DifficultySelector
-                    difficulty={difficulty}
-                    onChange={setDifficulty}
-                  />
-                </div>
               </div>
               <Textarea
                 placeholder="Share your code problem or challenge..."
@@ -141,15 +277,67 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
                 onChange={(e) => setContent(e.target.value)}
                 className="min-h-[120px] bg-codechatter-darker border-codechatter-blue/20 resize-none font-mono"
               />
+              
+              {/* File attachment for code problem */}
+              <div>
+                <button 
+                  type="button"
+                  onClick={() => codeFileInputRef.current?.click()}
+                  className="flex items-center gap-2 px-3 py-2 rounded-md bg-codechatter-darker border border-codechatter-blue/20 text-white/80 hover:bg-codechatter-blue/20 transition-colors"
+                >
+                  <Upload size={16} />
+                  {selectedFiles.length > 0 ? selectedFiles[0].name : "Attach Image/Video"}
+                </button>
+                <input
+                  ref={codeFileInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+              </div>
+              
+              {/* Preview for image attachments */}
+              {filePreview && (
+                <div className="mt-2 max-w-xs">
+                  <img 
+                    src={filePreview} 
+                    alt="Preview" 
+                    className="rounded-md max-h-36 object-contain bg-black/30"
+                  />
+                </div>
+              )}
             </TabsContent>
 
             <TabsContent value="media" className="mt-0 space-y-3">
-              <div className="p-6 border-2 border-dashed border-codechatter-blue/20 rounded-md flex flex-col items-center justify-center bg-codechatter-darker">
-                <Image className="h-10 w-10 mb-2 text-white/60" />
-                <p className="text-white/60">Drag and drop a photo or video, or click to browse</p>
+              <div 
+                className="p-6 border-2 border-dashed border-codechatter-blue/20 rounded-md flex flex-col items-center justify-center bg-codechatter-darker cursor-pointer"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                {filePreview ? (
+                  <img 
+                    src={filePreview} 
+                    alt="Preview" 
+                    className="max-h-48 object-contain mb-2"
+                  />
+                ) : (
+                  <Image className="h-10 w-10 mb-2 text-white/60" />
+                )}
+                <p className="text-white/60">
+                  {selectedFiles.length > 0 
+                    ? `Selected: ${selectedFiles[0].name}` 
+                    : 'Drag and drop a photo or video, or click to browse'}
+                </p>
                 <Button variant="ghost" className="mt-2 text-codechatter-blue">
                   Choose File
                 </Button>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
               </div>
               <Textarea
                 placeholder="Add a caption for your photo or video..."
@@ -196,48 +384,6 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
         </Button>
       </div>
     </form>
-  );
-};
-
-// Difficulty selector component
-const DifficultySelector = ({ 
-  difficulty, 
-  onChange 
-}: { 
-  difficulty: 'Easy' | 'Medium' | 'Hard';
-  onChange: (value: 'Easy' | 'Medium' | 'Hard') => void;
-}) => {
-  return (
-    <div className="flex items-center gap-2 text-sm">
-      <span className="text-white/60">Difficulty:</span>
-      <Button 
-        type="button"
-        variant="ghost" 
-        onClick={() => onChange('Easy')}
-        className={`h-8 px-2 ${difficulty === 'Easy' ? 'bg-green-600/20 text-green-400' : 'text-white/60'}`}
-      >
-        <Circle size={14} className={`mr-1 ${difficulty === 'Easy' ? 'text-green-400' : 'text-white/40'}`} fill={difficulty === 'Easy' ? 'currentColor' : 'none'} />
-        Easy
-      </Button>
-      <Button 
-        type="button"
-        variant="ghost" 
-        onClick={() => onChange('Medium')}
-        className={`h-8 px-2 ${difficulty === 'Medium' ? 'bg-yellow-600/20 text-yellow-400' : 'text-white/60'}`}
-      >
-        <Circle size={14} className={`mr-1 ${difficulty === 'Medium' ? 'text-yellow-400' : 'text-white/40'}`} fill={difficulty === 'Medium' ? 'currentColor' : 'none'} />
-        Medium
-      </Button>
-      <Button 
-        type="button"
-        variant="ghost" 
-        onClick={() => onChange('Hard')}
-        className={`h-8 px-2 ${difficulty === 'Hard' ? 'bg-red-600/20 text-red-400' : 'text-white/60'}`}
-      >
-        <Circle size={14} className={`mr-1 ${difficulty === 'Hard' ? 'text-red-400' : 'text-white/40'}`} fill={difficulty === 'Hard' ? 'currentColor' : 'none'} />
-        Hard
-      </Button>
-    </div>
   );
 };
 
