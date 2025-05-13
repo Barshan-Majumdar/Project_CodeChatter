@@ -66,12 +66,14 @@ const Sidebar: React.FC<SidebarProps> = ({ collapsed, toggleSidebar, userData, o
     navigate('/');
   };
 
-  // Add sign out handler
+  // Simplified sign out handler
   const handleSignOut = (e: React.MouseEvent) => {
     e.preventDefault();
     if (onSignOut) {
       onSignOut();
     }
+    // Just navigate to home since there's no auth now
+    navigate('/');
   };
 
   return (
