@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -47,6 +48,7 @@ interface Post {
   backgroundColor?: string;
   tags?: string[];
   attachments?: File[];
+  isSolved?: boolean;
 }
 
 const Home: React.FC = () => {
@@ -160,6 +162,23 @@ const Home: React.FC = () => {
     }));
   };
 
+  const handleSolveProblem = (postId: string) => {
+    setPosts(posts.map(post => {
+      if (post.id === postId) {
+        return {
+          ...post,
+          isSolved: true
+        };
+      }
+      return post;
+    }));
+    
+    toast({
+      title: "Problem Solved",
+      description: "You've marked this problem as solved!"
+    });
+  };
+
   return (
     <div className="p-6">
       <header className="mb-8">
@@ -203,6 +222,7 @@ const Home: React.FC = () => {
           onAddComment={handleAddComment}
           onDeletePost={handleDeletePost}
           onEditPost={handleEditPost}
+          onSolveProblem={handleSolveProblem}
         />
       </div>
     </div>

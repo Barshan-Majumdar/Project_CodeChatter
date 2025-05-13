@@ -3,7 +3,7 @@ import React, { useState, useRef, DragEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import { Send, Image, Code as CodeIcon, Tag, PaintBucket, Upload } from 'lucide-react';
+import { Send, Tag, PaintBucket, Upload, FileImage, FileVideo } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Post {
@@ -54,10 +54,31 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!content.trim()) {
+    // For text posts, content is required
+    if (postTab === "text" && !content.trim()) {
       toast({
         title: "Empty Post",
         description: "Please write something to share with the community.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // For problem posts, title is required
+    if (postTab === "problem" && !problemTitle.trim()) {
+      toast({
+        title: "Missing Problem Title",
+        description: "Please add a title for your code problem.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // For media posts, file is required
+    if (postTab === "media" && selectedFiles.length === 0) {
+      toast({
+        title: "No Media Selected",
+        description: "Please select a photo or video to upload.",
         variant: "destructive"
       });
       return;
@@ -118,8 +139,8 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
 
   const handleTabChange = (value: string) => {
     setPostTab(value);
-    setFilePreview(null);
-    setSelectedFiles([]);
+    // Don't reset files when changing tabs
+    // This allows users to select files and then add content
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -136,6 +157,10 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
           }
         };
         reader.readAsDataURL(file);
+      } else if (file.type.startsWith('video/')) {
+        // For video files, we set a generic preview or could use the first frame
+        // Here we just indicate it's a video
+        setFilePreview(URL.createObjectURL(file));
       } else {
         setFilePreview(null);
       }
@@ -160,7 +185,7 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
       const file = e.dataTransfer.files[0];
       setSelectedFiles([file]);
       
-      // Create a preview for image files
+      // Create preview based on file type
       if (file.type.startsWith('image/')) {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -169,13 +194,15 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
           }
         };
         reader.readAsDataURL(file);
-        
-        // Switch to appropriate tab based on where the file was dropped
-        if (area !== postTab) {
-          setPostTab(area);
-        }
+      } else if (file.type.startsWith('video/')) {
+        setFilePreview(URL.createObjectURL(file));
       } else {
         setFilePreview(null);
+      }
+      
+      // Switch to appropriate tab based on where the file was dropped
+      if (area !== postTab) {
+        setPostTab(area);
       }
 
       toast({
@@ -239,6 +266,13 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
     { value: "bg-gradient-to-r from-green-500 to-blue-500 bg-opacity-20", label: "Green to Blue", color: "linear-gradient" },
     { value: "bg-gradient-to-r from-yellow-500 to-red-500 bg-opacity-20", label: "Yellow to Red", color: "linear-gradient" },
   ];
+
+  // Helper function to render file type icon
+  const getFileTypeIcon = (file?: File) => {
+    if (!file) return <FileImage size={24} />;
+    if (file.type.startsWith('video/')) return <FileVideo size={24} />;
+    return <FileImage size={24} />;
+  };
   
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -369,14 +403,22 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
                 />
               </div>
               
-              {/* Preview for image attachments */}
+              {/* Preview for image/video attachments */}
               {filePreview && postTab === "problem" && (
-                <div className="mt-2 max-w-xs">
-                  <img 
-                    src={filePreview} 
-                    alt="Preview" 
-                    className="rounded-md max-h-36 object-contain bg-black/30"
-                  />
+                <div className="mt-2">
+                  {selectedFiles[0]?.type.startsWith('video/') ? (
+                    <video 
+                      src={filePreview} 
+                      controls
+                      className="rounded-md max-h-48 max-w-full object-contain bg-black/30"
+                    />
+                  ) : (
+                    <img 
+                      src={filePreview} 
+                      alt="Preview" 
+                      className="rounded-md max-h-48 max-w-full object-contain bg-black/30"
+                    />
+                  )}
                 </div>
               )}
             </TabsContent>
@@ -390,15 +432,25 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
                 onDragLeave={(e) => handleDragLeave(e, 'media')}
               >
                 {filePreview ? (
-                  <img 
-                    src={filePreview} 
-                    alt="Preview" 
-                    className="max-h-48 object-contain mb-2"
-                  />
+                  selectedFiles[0]?.type.startsWith('video/') ? (
+                    <video 
+                      src={filePreview} 
+                      controls
+                      className="max-h-48 object-contain mb-2 bg-black/30 rounded-md"
+                    />
+                  ) : (
+                    <img 
+                      src={filePreview} 
+                      alt="Preview" 
+                      className="max-h-48 object-contain mb-2"
+                    />
+                  )
                 ) : (
-                  <Image className="h-10 w-10 mb-2 text-white/60" />
+                  <div className="text-white/60">
+                    {getFileTypeIcon()} 
+                  </div>
                 )}
-                <p className="text-white/60">
+                <p className="text-white/60 mt-2">
                   {selectedFiles.length > 0 
                     ? `Selected: ${selectedFiles[0].name}` 
                     : 'Drag and drop a photo or video, or click to browse'}
@@ -415,7 +467,7 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
                 />
               </div>
               <Textarea
-                placeholder="Add a caption for your photo or video..."
+                placeholder="Add a caption for your photo or video (optional)..."
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 className="min-h-[80px] bg-codechatter-darker border-codechatter-blue/20 resize-none"
@@ -425,35 +477,14 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
         </div>
       </div>
       
-      <div className="flex justify-between items-center">
-        <div className="flex space-x-2">
-          {postTab === "text" && (
-            <>
-              <Button 
-                type="button" 
-                variant="ghost" 
-                className="text-white/60 hover:text-white hover:bg-white/10"
-                disabled={isLoading}
-                onClick={() => setPostTab("media")}
-              >
-                <Image size={18} className="mr-1" /> Add Photo
-              </Button>
-              <Button 
-                type="button" 
-                variant="ghost" 
-                className="text-white/60 hover:text-white hover:bg-white/10"
-                disabled={isLoading}
-                onClick={() => setPostTab("problem")}
-              >
-                <CodeIcon size={18} className="mr-1" /> Add Code
-              </Button>
-            </>
-          )}
-        </div>
+      <div className="flex justify-end items-center">
         <Button 
           type="submit"
           className="bg-codechatter-blue hover:bg-codechatter-blue/90"
-          disabled={isLoading || (postTab === "problem" && !problemTitle)}
+          disabled={isLoading || 
+            (postTab === "text" && !content.trim()) || 
+            (postTab === "problem" && !problemTitle.trim()) || 
+            (postTab === "media" && selectedFiles.length === 0)}
         >
           {isLoading ? "Posting..." : "Post"} <Send size={16} className="ml-2" />
         </Button>

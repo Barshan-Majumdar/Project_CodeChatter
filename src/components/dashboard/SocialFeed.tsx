@@ -47,6 +47,7 @@ interface SocialFeedProps {
   onAddComment: (postId: string) => void;
   onDeletePost: (postId: string) => void;
   onEditPost: (postId: string, content: string, updatedComments?: Comment[]) => void;
+  onSolveProblem?: (postId: string) => void;
 }
 
 const SocialFeed: React.FC<SocialFeedProps> = ({
@@ -58,7 +59,8 @@ const SocialFeed: React.FC<SocialFeedProps> = ({
   onNewCommentChange,
   onAddComment,
   onDeletePost,
-  onEditPost
+  onEditPost,
+  onSolveProblem
 }) => {
   return (
     <div className="space-y-4">
@@ -74,6 +76,7 @@ const SocialFeed: React.FC<SocialFeedProps> = ({
           onAddComment={onAddComment}
           onDeletePost={onDeletePost}
           onEditPost={onEditPost}
+          onSolveProblem={onSolveProblem}
         />
       ))}
     </div>

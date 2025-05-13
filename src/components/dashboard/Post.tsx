@@ -11,7 +11,9 @@ import {
   MoreHorizontal, 
   Trash2,
   Edit,
-  Image
+  Check,
+  FileImage,
+  FileVideo
 } from 'lucide-react';
 import CommentsSection from './CommentsSection';
 import { 
@@ -69,6 +71,7 @@ interface PostProps {
   onAddComment: (postId: string) => void;
   onDeletePost?: (postId: string) => void;
   onEditPost?: (postId: string, content: string) => void;
+  onSolveProblem?: (postId: string) => void;
 }
 
 const PostComponent: React.FC<PostProps> = ({
@@ -80,7 +83,8 @@ const PostComponent: React.FC<PostProps> = ({
   onNewCommentChange,
   onAddComment,
   onDeletePost,
-  onEditPost
+  onEditPost,
+  onSolveProblem
 }) => {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
@@ -117,6 +121,23 @@ const PostComponent: React.FC<PostProps> = ({
     if (onDeletePost) {
       onDeletePost(post.id);
     }
+  };
+
+  const handleSolveProblem = () => {
+    if (onSolveProblem) {
+      onSolveProblem(post.id);
+      toast({
+        title: "Problem Solved",
+        description: "You've marked this problem as solved!"
+      });
+    }
+  };
+
+  // Helper function to determine if a URL is a video
+  const isVideoUrl = (url: string) => {
+    // Simple check based on common video extensions
+    const videoExtensions = ['.mp4', '.webm', '.ogg', '.mov', '.avi'];
+    return videoExtensions.some(ext => url.toLowerCase().includes(ext));
   };
 
   return (
@@ -163,7 +184,9 @@ const PostComponent: React.FC<PostProps> = ({
               {post.type === 'media' && post.mediaUrl && (
                 <>
                   <span className="mx-1">•</span>
-                  <Badge className="bg-green-600/20 text-green-400 text-xs">Media Post</Badge>
+                  <Badge className="bg-green-600/20 text-green-400 text-xs">
+                    {isVideoUrl(post.mediaUrl) ? 'Video Post' : 'Photo Post'}
+                  </Badge>
                 </>
               )}
             </div>
@@ -239,7 +262,33 @@ const PostComponent: React.FC<PostProps> = ({
             </div>
           </div>
         ) : (
-          <p className="text-white/80 text-sm">{post.content}</p>
+          <>
+            {/* Show text content only if it's not empty */}
+            {post.content && <p className="text-white/80 text-sm mb-4">{post.content}</p>}
+            
+            {/* Display media for all post types that have mediaUrl */}
+            {post.mediaUrl && (
+              <div className="mb-4 rounded-md overflow-hidden">
+                {isVideoUrl(post.mediaUrl) ? (
+                  <div className="aspect-video">
+                    <video 
+                      src={post.mediaUrl} 
+                      controls 
+                      className="w-full h-full object-contain bg-black"
+                    />
+                  </div>
+                ) : (
+                  <AspectRatio ratio={16/9} className="bg-black">
+                    <img 
+                      src={post.mediaUrl} 
+                      alt="Post attachment" 
+                      className="w-full h-full object-contain"
+                    />
+                  </AspectRatio>
+                )}
+              </div>
+            )}
+          </>
         )}
       </div>
       
@@ -249,30 +298,6 @@ const PostComponent: React.FC<PostProps> = ({
             <Code size={16} className="text-codechatter-purple mr-2" />
             <span className="text-white text-sm font-medium">{post.challengeDetails.title}</span>
           </div>
-        </div>
-      )}
-      
-      {/* Media display for problem posts with attachments */}
-      {post.type === 'problem' && post.mediaUrl && !isEditing && (
-        <div className="mb-4">
-          <img 
-            src={post.mediaUrl} 
-            alt="Problem attachment" 
-            className="rounded-md max-h-64 object-contain"
-          />
-        </div>
-      )}
-      
-      {/* Media display for media posts */}
-      {post.type === 'media' && post.mediaUrl && !isEditing && (
-        <div className="mb-4">
-          <AspectRatio ratio={16/9} className="bg-black rounded-md overflow-hidden">
-            <img 
-              src={post.mediaUrl} 
-              alt="Media post" 
-              className="w-full h-full object-contain"
-            />
-          </AspectRatio>
         </div>
       )}
       
@@ -297,6 +322,18 @@ const PostComponent: React.FC<PostProps> = ({
               <MessageSquare size={16} className="mr-1" />
               <span>{post.comments.length}</span>
             </Button>
+            
+            {/* Show Solve button only for problem type posts */}
+            {post.type === 'problem' && onSolveProblem && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="text-green-400 hover:text-green-300 hover:bg-green-400/10"
+                onClick={handleSolveProblem}
+              >
+                <Check size={16} className="mr-1" /> Solve
+              </Button>
+            )}
           </div>
           <Button 
             variant="ghost" 
