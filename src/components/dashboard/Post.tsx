@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +10,8 @@ import {
   Code, 
   MoreHorizontal, 
   Trash2,
-  Edit
+  Edit,
+  Image
 } from 'lucide-react';
 import CommentsSection from './CommentsSection';
 import { 
@@ -20,6 +22,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { Textarea } from '@/components/ui/textarea';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 interface Comment {
   id: string;
@@ -43,13 +46,17 @@ interface Post {
   comments: Comment[];
   isLiked: boolean;
   isBookmarked: boolean;
-  type: 'status' | 'challenge-completion' | 'blog';
+  type: 'status' | 'challenge-completion' | 'blog' | 'problem' | 'media';
   challengeDetails?: {
     title: string;
-    difficulty: 'Easy' | 'Medium' | 'Hard';
+    difficulty?: 'Easy' | 'Medium' | 'Hard';
   };
   blogTitle?: string;
+  mediaUrl?: string;
   showComments?: boolean;
+  backgroundColor?: string;
+  tags?: string[];
+  attachments?: File[];
 }
 
 interface PostProps {
@@ -113,7 +120,7 @@ const PostComponent: React.FC<PostProps> = ({
   };
 
   return (
-    <div className="bg-codechatter-dark border-codechatter-blue/20 rounded-lg border p-6">
+    <div className={`bg-codechatter-dark border-codechatter-blue/20 rounded-lg border p-6 ${post.backgroundColor || ''}`}>
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center">
           <Avatar className="h-10 w-10 mr-3">
@@ -147,6 +154,18 @@ const PostComponent: React.FC<PostProps> = ({
                   <Badge className="bg-codechatter-blue/20 text-codechatter-blue text-xs">Blog Post</Badge>
                 </>
               )}
+              {post.type === 'problem' && (
+                <>
+                  <span className="mx-1">•</span>
+                  <Badge className="bg-purple-600/20 text-purple-400 text-xs">Code Problem</Badge>
+                </>
+              )}
+              {post.type === 'media' && post.mediaUrl && (
+                <>
+                  <span className="mx-1">•</span>
+                  <Badge className="bg-green-600/20 text-green-400 text-xs">Media Post</Badge>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -174,6 +193,20 @@ const PostComponent: React.FC<PostProps> = ({
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+      
+      {/* Tags display */}
+      {post.tags && post.tags.length > 0 && (
+        <div className="mb-3 flex flex-wrap gap-1">
+          {post.tags.map(tag => (
+            <span 
+              key={tag} 
+              className="px-2 py-0.5 bg-codechatter-blue/30 text-white/80 text-xs rounded-full"
+            >
+              @{tag}
+            </span>
+          ))}
+        </div>
+      )}
       
       <div className="mb-4">
         {post.type === 'blog' && post.blogTitle && (
@@ -216,6 +249,30 @@ const PostComponent: React.FC<PostProps> = ({
             <Code size={16} className="text-codechatter-purple mr-2" />
             <span className="text-white text-sm font-medium">{post.challengeDetails.title}</span>
           </div>
+        </div>
+      )}
+      
+      {/* Media display for problem posts with attachments */}
+      {post.type === 'problem' && post.mediaUrl && !isEditing && (
+        <div className="mb-4">
+          <img 
+            src={post.mediaUrl} 
+            alt="Problem attachment" 
+            className="rounded-md max-h-64 object-contain"
+          />
+        </div>
+      )}
+      
+      {/* Media display for media posts */}
+      {post.type === 'media' && post.mediaUrl && !isEditing && (
+        <div className="mb-4">
+          <AspectRatio ratio={16/9} className="bg-black rounded-md overflow-hidden">
+            <img 
+              src={post.mediaUrl} 
+              alt="Media post" 
+              className="w-full h-full object-contain"
+            />
+          </AspectRatio>
         </div>
       )}
       

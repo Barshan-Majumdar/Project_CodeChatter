@@ -1,17 +1,10 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, DragEvent } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Send, Image, Code as CodeIcon, Tag, PaintBucket, Upload } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 interface Post {
   id: string;
@@ -51,6 +44,9 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
   const [tagInput, setTagInput] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
   const [filePreview, setFilePreview] = useState<string | null>(null);
+  const [isDraggingText, setIsDraggingText] = useState(false);
+  const [isDraggingProblem, setIsDraggingProblem] = useState(false);
+  const [isDraggingMedia, setIsDraggingMedia] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const codeFileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -95,8 +91,8 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
       };
     }
     
-    // Add media URL if it's a media post and there's a selected file
-    if (postTab === "media" && selectedFiles.length > 0) {
+    // Add media URL if it's a media post or problem post and there's a selected file
+    if ((postTab === "media" || postTab === "problem") && selectedFiles.length > 0) {
       // In a real implementation, this would be the URL after upload
       newPost.mediaUrl = URL.createObjectURL(selectedFiles[0]);
     }
@@ -151,6 +147,72 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
     }
   };
 
+  const handleDrop = (e: DragEvent<HTMLDivElement>, area: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Reset all drag states
+    setIsDraggingText(false);
+    setIsDraggingProblem(false);
+    setIsDraggingMedia(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      setSelectedFiles([file]);
+      
+      // Create a preview for image files
+      if (file.type.startsWith('image/')) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          if (e.target?.result) {
+            setFilePreview(e.target.result as string);
+          }
+        };
+        reader.readAsDataURL(file);
+        
+        // Switch to appropriate tab based on where the file was dropped
+        if (area !== postTab) {
+          setPostTab(area);
+        }
+      } else {
+        setFilePreview(null);
+      }
+
+      toast({
+        title: "File Selected",
+        description: `${file.name} has been added to your post.`
+      });
+    }
+  };
+
+  const handleDragOver = (e: DragEvent<HTMLDivElement>, area: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Set the appropriate dragging state based on area
+    if (area === 'text') {
+      setIsDraggingText(true);
+    } else if (area === 'problem') {
+      setIsDraggingProblem(true);
+    } else if (area === 'media') {
+      setIsDraggingMedia(true);
+    }
+  };
+
+  const handleDragLeave = (e: DragEvent<HTMLDivElement>, area: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Reset the appropriate dragging state based on area
+    if (area === 'text') {
+      setIsDraggingText(false);
+    } else if (area === 'problem') {
+      setIsDraggingProblem(false);
+    } else if (area === 'media') {
+      setIsDraggingMedia(false);
+    }
+  };
+
   const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && tagInput.trim()) {
       e.preventDefault();
@@ -194,7 +256,10 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
 
             <TabsContent value="text" className="mt-0">
               <div 
-                className={`rounded-md overflow-hidden ${backgroundColor}`}
+                className={`rounded-md overflow-hidden ${backgroundColor} ${isDraggingText ? 'border-2 border-dashed border-codechatter-blue/60' : ''}`}
+                onDragOver={(e) => handleDragOver(e, 'text')}
+                onDrop={(e) => handleDrop(e, 'text')}
+                onDragLeave={(e) => handleDragLeave(e, 'text')}
               >
                 <Textarea
                   placeholder="Share what you're working on or thinking about..."
@@ -271,12 +336,19 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
                   className="flex-1 h-10 px-3 rounded-md bg-codechatter-darker border border-codechatter-blue/20 text-white"
                 />
               </div>
-              <Textarea
-                placeholder="Share your code problem or challenge..."
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                className="min-h-[120px] bg-codechatter-darker border-codechatter-blue/20 resize-none font-mono"
-              />
+              <div
+                className={`rounded-md overflow-hidden ${isDraggingProblem ? 'border-2 border-dashed border-codechatter-blue/60' : ''}`}
+                onDragOver={(e) => handleDragOver(e, 'problem')}
+                onDrop={(e) => handleDrop(e, 'problem')}
+                onDragLeave={(e) => handleDragLeave(e, 'problem')}
+              >
+                <Textarea
+                  placeholder="Share your code problem or challenge..."
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  className="min-h-[120px] bg-codechatter-darker border-codechatter-blue/20 resize-none font-mono"
+                />
+              </div>
               
               {/* File attachment for code problem */}
               <div>
@@ -298,7 +370,7 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
               </div>
               
               {/* Preview for image attachments */}
-              {filePreview && (
+              {filePreview && postTab === "problem" && (
                 <div className="mt-2 max-w-xs">
                   <img 
                     src={filePreview} 
@@ -311,8 +383,11 @@ const CreatePostForm: React.FC<CreatePostFormProps> = ({ onPostCreated, userName
 
             <TabsContent value="media" className="mt-0 space-y-3">
               <div 
-                className="p-6 border-2 border-dashed border-codechatter-blue/20 rounded-md flex flex-col items-center justify-center bg-codechatter-darker cursor-pointer"
+                className={`p-6 border-2 border-dashed ${isDraggingMedia ? 'border-codechatter-blue border-solid' : 'border-codechatter-blue/20'} rounded-md flex flex-col items-center justify-center bg-codechatter-darker cursor-pointer`}
                 onClick={() => fileInputRef.current?.click()}
+                onDragOver={(e) => handleDragOver(e, 'media')}
+                onDrop={(e) => handleDrop(e, 'media')}
+                onDragLeave={(e) => handleDragLeave(e, 'media')}
               >
                 {filePreview ? (
                   <img 
