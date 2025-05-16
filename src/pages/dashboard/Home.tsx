@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
@@ -9,10 +9,12 @@ import CreatePostForm from '@/components/dashboard/CreatePostForm';
 import SocialFeed from '@/components/dashboard/SocialFeed';
 import SearchProblem from '@/components/dashboard/SearchProblem';
 import { useOutletContext } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 
 interface UserData {
   name: string;
   email: string;
+  id?: string;
 }
 
 interface Comment {
@@ -57,25 +59,136 @@ interface Post {
 }
 
 // Improved function to simulate AI verification of code solution against the problem statement
-// In a real implementation, this would call an API or an edge function with GPT/Gemini integration
 const verifyCodeSolution = async (problemStatement: string, solution: string): Promise<boolean> => {
-  // This is a placeholder for a real AI verification
-  // In a real implementation, you would send the problem statement and solution to an AI model
+  // In a real implementation, this would call an API with OpenAI or Gemini integration
   console.log("Verifying solution for problem:", problemStatement);
   console.log("Solution provided:", solution);
   
-  // Simulate network delay for verification
-  await new Promise(resolve => setTimeout(resolve, 2000));
+  try {
+    // Simulate API call to AI model
+    await new Promise(resolve => setTimeout(resolve, 2000));
+    
+    // For demo purposes, implement basic checks (in production use a real AI API)
+    const solutionLength = solution.length > 10; // Solution should be substantive
+    const containsCodePatterns = /function|if|for|while|return|const|let|var|class|=>/i.test(solution); // Contains code keywords
+    
+    // Check if solution matches problem context
+    // This would be replaced with actual AI verification against the problem statement
+    const problemKeywords = problemStatement.toLowerCase().match(/\b\w{4,}\b/g) || [];
+    let matchCount = 0;
+    
+    for (const keyword of problemKeywords) {
+      if (solution.toLowerCase().includes(keyword)) {
+        matchCount++;
+      }
+    }
+    
+    const hasContextMatch = matchCount > 0;
+    
+    return solutionLength && containsCodePatterns && hasContextMatch;
+  } catch (error) {
+    console.error("AI verification error:", error);
+    return false;
+  }
+};
+
+// Function to update user stats when they solve a problem
+const updateUserStats = async (userId: string, difficulty: string) => {
+  try {
+    // Calculate points based on difficulty
+    let points = 0;
+    switch (difficulty.toLowerCase()) {
+      case 'easy':
+        points = 10;
+        break;
+      case 'medium':
+        points = 20;
+        break;
+      case 'hard':
+        points = 40;
+        break;
+      default:
+        points = 5;
+    }
+    
+    // Record the solved problem
+    const { error } = await supabase
+      .from('solved_problems')
+      .insert({
+        user_id: userId,
+        difficulty: difficulty.toLowerCase(),
+        points,
+        problem_url: window.location.href
+      });
+      
+    if (error) throw error;
+    
+    return true;
+  } catch (error) {
+    console.error("Error updating user stats:", error);
+    return false;
+  }
+};
+
+// Generate random posts for infinite scrolling
+const generateRandomPosts = (count: number, startIndex: number): Post[] => {
+  const postTypes = ['status', 'problem', 'media', 'blog', 'challenge-completion'];
+  const users = ['Sarah Kim', 'Michael Wong', 'David Johnson', 'Emma Davis', 'Alex Chen'];
+  const difficulties = ['Easy', 'Medium', 'Hard'];
+  const now = new Date();
   
-  // For demo purposes, let's implement a basic check
-  // In production, this would be replaced with a call to OpenAI/Gemini API
-  
-  // Simulate basic criteria check - real AI would do more comprehensive analysis
-  const solutionLength = solution.length > 10; // Solution should be substantive
-  const containsCodePatterns = /function|if|for|while|return|const|let|var|class|=>/i.test(solution); // Contains code keywords
-  const matchesProblemContext = true; // In real AI check, it would verify solution against problem context
-  
-  return solutionLength && containsCodePatterns && matchesProblemContext;
+  return Array(count).fill(null).map((_, idx) => {
+    const type = postTypes[Math.floor(Math.random() * postTypes.length)] as Post['type'];
+    const user = users[Math.floor(Math.random() * users.length)];
+    const hoursAgo = Math.floor(Math.random() * 48);
+    const timestamp = `${hoursAgo} ${hoursAgo === 1 ? 'hour' : 'hours'} ago`;
+    const likes = Math.floor(Math.random() * 50);
+    const id = `post-${startIndex + idx}-${Date.now()}`;
+    
+    const basePost: Post = {
+      id,
+      user: { name: user },
+      content: `This is a sample ${type} post #${startIndex + idx}`,
+      timestamp,
+      likes,
+      comments: [],
+      isLiked: false,
+      isBookmarked: false,
+      type,
+      showComments: false,
+    };
+    
+    // Add type-specific properties
+    if (type === 'problem') {
+      const difficulty = difficulties[Math.floor(Math.random() * difficulties.length)];
+      basePost.content = `Write a function to ${Math.random() > 0.5 ? 'calculate the fibonacci sequence' : 'find the maximum subarray sum'} with optimal time complexity.`;
+      basePost.challengeDetails = {
+        title: `Algorithm Challenge #${startIndex + idx}`,
+        difficulty: difficulty as 'Easy' | 'Medium' | 'Hard'
+      };
+      basePost.tags = ['algorithms', 'coding-challenge', difficulty.toLowerCase()];
+    } else if (type === 'media') {
+      basePost.mediaUrl = `https://picsum.photos/seed/${id}/800/450`;
+    } else if (type === 'blog') {
+      basePost.blogTitle = `How I solved the ${Math.random() > 0.5 ? 'binary tree traversal' : 'dynamic programming'} problem`;
+      basePost.content = 'In this post I explain my approach to a difficult coding interview question...';
+      basePost.tags = ['career', 'interview-prep', 'tutorial'];
+    } else if (type === 'challenge-completion') {
+      const difficulty = difficulties[Math.floor(Math.random() * difficulties.length)];
+      basePost.content = `Just completed the "${Math.random() > 0.5 ? 'Two Sum' : 'Merge Sort'}" challenge!`;
+      basePost.challengeDetails = {
+        title: `${difficulty} Challenge Completed`,
+        difficulty: difficulty as 'Easy' | 'Medium' | 'Hard'
+      };
+      basePost.tags = ['achievement', difficulty.toLowerCase()];
+    } else {
+      // Regular status post
+      basePost.content = `Working on a new project using ${Math.random() > 0.5 ? 'React and TypeScript' : 'Python and FastAPI'}. Making good progress! #coding #${Math.random() > 0.5 ? 'webdev' : 'machinelearning'}`;
+      basePost.tags = ['project-update', Math.random() > 0.5 ? 'frontend' : 'backend'];
+    }
+    
+    return basePost;
+  });
 };
 
 const Home: React.FC = () => {
@@ -84,6 +197,44 @@ const Home: React.FC = () => {
   const [newComments, setNewComments] = useState<Record<string, string>>({});
   const [isSearchDialogOpen, setIsSearchDialogOpen] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
+  
+  // Infinite scroll implementation
+  const [page, setPage] = useState(1);
+  const [loading, setLoading] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
+  const observer = useRef<IntersectionObserver | null>(null);
+  
+  const lastPostRef = useCallback((node: HTMLDivElement) => {
+    if (loading) return;
+    if (observer.current) observer.current.disconnect();
+    
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        loadMorePosts();
+      }
+    });
+    
+    if (node) observer.current.observe(node);
+  }, [loading, hasMore]);
+  
+  // Load initial posts
+  useEffect(() => {
+    loadMorePosts();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  
+  const loadMorePosts = () => {
+    setLoading(true);
+    // Simulate API call delay
+    setTimeout(() => {
+      const newPosts = generateRandomPosts(5, posts.length);
+      setPosts(prevPosts => [...prevPosts, ...newPosts]);
+      setPage(prevPage => prevPage + 1);
+      setLoading(false);
+      // For demo, we'll always have more posts
+      setHasMore(true);
+    }, 1000);
+  };
 
   const handleCreatePost = (newPost: Post) => {
     setPosts([newPost, ...posts]);
@@ -288,7 +439,7 @@ const Home: React.FC = () => {
     }
   };
 
-  const handleSolveProblem = (postId: string, solution?: string) => {
+  const handleSolveProblem = async (postId: string, solution?: string) => {
     if (solution) {
       // Find the post
       const post = posts.find(p => p.id === postId);
@@ -302,6 +453,21 @@ const Home: React.FC = () => {
           variant: "destructive"
         });
         return;
+      }
+      
+      // Update user stats for the solved problem
+      if (userData.id) {
+        const difficulty = post.challengeDetails?.difficulty || 'Easy';
+        const statsUpdated = await updateUserStats(userData.id, difficulty);
+        
+        if (!statsUpdated) {
+          toast({
+            title: "Stats Update Failed",
+            description: "We couldn't update your stats. Please try again.",
+            variant: "destructive"
+          });
+          return;
+        }
       }
       
       // Submit solution
@@ -360,7 +526,7 @@ const Home: React.FC = () => {
 
       <div className="grid grid-cols-1 gap-6 max-w-4xl mx-auto">
         {/* User Stats */}
-        <UserStats />
+        <UserStats userId={userData.id} />
 
         {/* Create Post */}
         <Card className="bg-codechatter-dark border-codechatter-blue/20">
@@ -385,6 +551,16 @@ const Home: React.FC = () => {
           onSolutionChange={handleSolutionChange}
           onVerifySolution={handleVerifySolution}
         />
+        
+        {/* Loading indicator */}
+        {loading && (
+          <div className="flex justify-center py-4">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-codechatter-blue"></div>
+          </div>
+        )}
+        
+        {/* Invisible element for intersection observer */}
+        <div ref={lastPostRef} className="h-4"></div>
       </div>
     </div>
   );
