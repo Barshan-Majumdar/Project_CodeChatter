@@ -35,6 +35,9 @@ interface Post {
   backgroundColor?: string;
   tags?: string[];
   attachments?: File[];
+  isSolved?: boolean;
+  solution?: string;
+  showSolutionInput?: boolean;
 }
 
 interface SocialFeedProps {
@@ -47,7 +50,9 @@ interface SocialFeedProps {
   onAddComment: (postId: string) => void;
   onDeletePost: (postId: string) => void;
   onEditPost: (postId: string, content: string, updatedComments?: Comment[]) => void;
-  onSolveProblem?: (postId: string) => void;
+  onSolveProblem?: (postId: string, solution?: string) => void;
+  onToggleSolutionInput?: (postId: string) => void;
+  onSolutionChange?: (postId: string, solution: string) => void;
 }
 
 const SocialFeed: React.FC<SocialFeedProps> = ({
@@ -60,7 +65,9 @@ const SocialFeed: React.FC<SocialFeedProps> = ({
   onAddComment,
   onDeletePost,
   onEditPost,
-  onSolveProblem
+  onSolveProblem,
+  onToggleSolutionInput,
+  onSolutionChange
 }) => {
   return (
     <div className="space-y-4">
@@ -77,6 +84,8 @@ const SocialFeed: React.FC<SocialFeedProps> = ({
           onDeletePost={onDeletePost}
           onEditPost={onEditPost}
           onSolveProblem={onSolveProblem}
+          onToggleSolutionInput={onToggleSolutionInput}
+          onSolutionChange={onSolutionChange}
         />
       ))}
     </div>

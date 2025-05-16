@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -59,6 +58,9 @@ interface Post {
   backgroundColor?: string;
   tags?: string[];
   attachments?: File[];
+  isSolved?: boolean;
+  solution?: string;
+  showSolutionInput?: boolean;
 }
 
 interface PostProps {
@@ -71,7 +73,9 @@ interface PostProps {
   onAddComment: (postId: string) => void;
   onDeletePost?: (postId: string) => void;
   onEditPost?: (postId: string, content: string) => void;
-  onSolveProblem?: (postId: string) => void;
+  onSolveProblem?: (postId: string, solution?: string) => void;
+  onToggleSolutionInput?: (postId: string) => void;
+  onSolutionChange?: (postId: string, solution: string) => void;
 }
 
 const PostComponent: React.FC<PostProps> = ({
@@ -84,11 +88,14 @@ const PostComponent: React.FC<PostProps> = ({
   onAddComment,
   onDeletePost,
   onEditPost,
-  onSolveProblem
+  onSolveProblem,
+  onToggleSolutionInput,
+  onSolutionChange
 }) => {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(post.content);
+  const [solution, setSolution] = useState(post.solution || '');
 
   const handleEdit = () => {
     setIsEditing(true);
@@ -124,12 +131,28 @@ const PostComponent: React.FC<PostProps> = ({
   };
 
   const handleSolveProblem = () => {
-    if (onSolveProblem) {
-      onSolveProblem(post.id);
+    if (onSolveProblem && solution.trim()) {
+      onSolveProblem(post.id, solution);
       toast({
         title: "Problem Solved",
-        description: "You've marked this problem as solved!"
+        description: "You've submitted a solution to this problem!"
       });
+    } else if (!solution.trim() && post.showSolutionInput) {
+      toast({
+        title: "Error",
+        description: "Please provide a solution before submitting.",
+        variant: "destructive"
+      });
+    } else if (onToggleSolutionInput) {
+      onToggleSolutionInput(post.id);
+    }
+  };
+
+  const handleSolutionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newSolution = e.target.value;
+    setSolution(newSolution);
+    if (onSolutionChange) {
+      onSolutionChange(post.id, newSolution);
     }
   };
 
@@ -300,6 +323,36 @@ const PostComponent: React.FC<PostProps> = ({
           </div>
         </div>
       )}
+
+      {/* Solution Input Area for Code Problems */}
+      {post.type === 'problem' && post.showSolutionInput && !isEditing && (
+        <div className="mb-4 p-3 rounded bg-codechatter-darker border border-codechatter-blue/20">
+          <h4 className="text-sm font-medium text-white mb-2">Your Solution</h4>
+          <Textarea 
+            value={solution}
+            onChange={handleSolutionChange}
+            placeholder="Write your solution code here..."
+            className="bg-black/30 border-codechatter-blue/20 text-white min-h-[150px] font-mono"
+          />
+          <div className="flex justify-end mt-3">
+            <Button 
+              size="sm" 
+              className="bg-green-600 hover:bg-green-700 text-white"
+              onClick={() => onSolveProblem && onSolveProblem(post.id, solution)}
+            >
+              <Check size={16} className="mr-1" /> Submit Solution
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Show solved status for problem */}
+      {post.type === 'problem' && post.isSolved && !isEditing && (
+        <div className="mb-4 p-2 rounded bg-green-900/20 border border-green-500/20 flex items-center">
+          <Check size={16} className="text-green-500 mr-2" />
+          <span className="text-green-400 text-sm">Problem solved!</span>
+        </div>
+      )}
       
       {!isEditing && (
         <div className="flex items-center justify-between pt-2 border-t border-white/10">
@@ -313,25 +366,32 @@ const PostComponent: React.FC<PostProps> = ({
               <ThumbsUp size={16} className="mr-1" />
               <span>{post.likes}</span>
             </Button>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="text-white/60 hover:text-white"
-              onClick={() => onToggleComments(post.id)}
-            >
-              <MessageSquare size={16} className="mr-1" />
-              <span>{post.comments.length}</span>
-            </Button>
             
-            {/* Show Solve button only for problem type posts */}
-            {post.type === 'problem' && onSolveProblem && (
+            {/* Show Comments button for all types except problem */}
+            {post.type !== 'problem' && (
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="text-green-400 hover:text-green-300 hover:bg-green-400/10"
+                className="text-white/60 hover:text-white"
+                onClick={() => onToggleComments(post.id)}
+              >
+                <MessageSquare size={16} className="mr-1" />
+                <span>{post.comments.length}</span>
+              </Button>
+            )}
+            
+            {/* Show Solve button only for problem type posts */}
+            {post.type === 'problem' && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className={post.isSolved 
+                  ? "text-green-400 hover:text-green-300" 
+                  : "text-white/60 hover:text-white hover:bg-green-400/10"}
                 onClick={handleSolveProblem}
               >
-                <Check size={16} className="mr-1" /> Solve
+                <Code size={16} className="mr-1" /> 
+                {post.isSolved ? "Solved" : "Solve"}
               </Button>
             )}
           </div>
@@ -346,15 +406,15 @@ const PostComponent: React.FC<PostProps> = ({
         </div>
       )}
       
-      {/* Comments Section */}
-      {post.showComments && (
+      {/* Comments Section - only show for non-problem posts */}
+      {post.showComments && post.type !== 'problem' && (
         <CommentsSection
           postId={post.id}
           comments={post.comments}
           newCommentValue={newCommentValue}
           onNewCommentChange={(postId, value) => onNewCommentChange(postId, value)}
           onAddComment={onAddComment}
-          onDeleteComment={(commentId) => onDeletePost(commentId)}
+          onDeleteComment={(commentId) => onDeletePost && onDeletePost(commentId)}
         />
       )}
     </div>

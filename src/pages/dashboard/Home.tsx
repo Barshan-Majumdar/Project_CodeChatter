@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -49,6 +48,8 @@ interface Post {
   tags?: string[];
   attachments?: File[];
   isSolved?: boolean;
+  solution?: string;
+  showSolutionInput?: boolean;
 }
 
 const Home: React.FC = () => {
@@ -162,21 +163,53 @@ const Home: React.FC = () => {
     }));
   };
 
-  const handleSolveProblem = (postId: string) => {
+  const handleToggleSolutionInput = (postId: string) => {
     setPosts(posts.map(post => {
       if (post.id === postId) {
         return {
           ...post,
-          isSolved: true
+          showSolutionInput: !post.showSolutionInput
         };
       }
       return post;
     }));
-    
-    toast({
-      title: "Problem Solved",
-      description: "You've marked this problem as solved!"
-    });
+  };
+
+  const handleSolutionChange = (postId: string, solution: string) => {
+    setPosts(posts.map(post => {
+      if (post.id === postId) {
+        return {
+          ...post,
+          solution
+        };
+      }
+      return post;
+    }));
+  };
+
+  const handleSolveProblem = (postId: string, solution?: string) => {
+    if (solution) {
+      // Submit solution
+      setPosts(posts.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            isSolved: true,
+            solution,
+            showSolutionInput: false
+          };
+        }
+        return post;
+      }));
+      
+      toast({
+        title: "Solution Submitted",
+        description: "You've successfully submitted your solution!"
+      });
+    } else {
+      // Toggle solution input area
+      handleToggleSolutionInput(postId);
+    }
   };
 
   return (
@@ -223,6 +256,8 @@ const Home: React.FC = () => {
           onDeletePost={handleDeletePost}
           onEditPost={handleEditPost}
           onSolveProblem={handleSolveProblem}
+          onToggleSolutionInput={handleToggleSolutionInput}
+          onSolutionChange={handleSolutionChange}
         />
       </div>
     </div>
