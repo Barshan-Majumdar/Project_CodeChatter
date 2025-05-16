@@ -38,6 +38,9 @@ interface Post {
   isSolved?: boolean;
   solution?: string;
   showSolutionInput?: boolean;
+  isVerifying?: boolean;
+  isVerified?: boolean;
+  solutions?: string[];
 }
 
 interface SocialFeedProps {
@@ -53,6 +56,7 @@ interface SocialFeedProps {
   onSolveProblem?: (postId: string, solution?: string) => void;
   onToggleSolutionInput?: (postId: string) => void;
   onSolutionChange?: (postId: string, solution: string) => void;
+  onVerifySolution?: (postId: string, solution: string) => void;
 }
 
 const SocialFeed: React.FC<SocialFeedProps> = ({
@@ -67,7 +71,8 @@ const SocialFeed: React.FC<SocialFeedProps> = ({
   onEditPost,
   onSolveProblem,
   onToggleSolutionInput,
-  onSolutionChange
+  onSolutionChange,
+  onVerifySolution
 }) => {
   return (
     <div className="space-y-4">
@@ -86,6 +91,7 @@ const SocialFeed: React.FC<SocialFeedProps> = ({
           onSolveProblem={onSolveProblem}
           onToggleSolutionInput={onToggleSolutionInput}
           onSolutionChange={onSolutionChange}
+          onVerifySolution={onVerifySolution}
         />
       ))}
     </div>

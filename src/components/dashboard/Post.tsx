@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Avatar } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -61,6 +62,9 @@ interface Post {
   isSolved?: boolean;
   solution?: string;
   showSolutionInput?: boolean;
+  isVerifying?: boolean;
+  isVerified?: boolean;
+  solutions?: string[];
 }
 
 interface PostProps {
@@ -76,6 +80,7 @@ interface PostProps {
   onSolveProblem?: (postId: string, solution?: string) => void;
   onToggleSolutionInput?: (postId: string) => void;
   onSolutionChange?: (postId: string, solution: string) => void;
+  onVerifySolution?: (postId: string, solution: string) => void;
 }
 
 const PostComponent: React.FC<PostProps> = ({
@@ -90,7 +95,8 @@ const PostComponent: React.FC<PostProps> = ({
   onEditPost,
   onSolveProblem,
   onToggleSolutionInput,
-  onSolutionChange
+  onSolutionChange,
+  onVerifySolution
 }) => {
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
@@ -131,7 +137,7 @@ const PostComponent: React.FC<PostProps> = ({
   };
 
   const handleSolveProblem = () => {
-    if (onSolveProblem && solution.trim()) {
+    if (onSolveProblem && solution.trim() && post.isVerified) {
       onSolveProblem(post.id, solution);
       toast({
         title: "Problem Solved",
@@ -153,6 +159,18 @@ const PostComponent: React.FC<PostProps> = ({
     setSolution(newSolution);
     if (onSolutionChange) {
       onSolutionChange(post.id, newSolution);
+    }
+  };
+
+  const handleVerifySolution = () => {
+    if (onVerifySolution && solution.trim()) {
+      onVerifySolution(post.id, solution);
+    } else {
+      toast({
+        title: "Error",
+        description: "Please provide a solution to verify.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -334,14 +352,55 @@ const PostComponent: React.FC<PostProps> = ({
             placeholder="Write your solution code here..."
             className="bg-black/30 border-codechatter-blue/20 text-white min-h-[150px] font-mono"
           />
-          <div className="flex justify-end mt-3">
-            <Button 
-              size="sm" 
-              className="bg-green-600 hover:bg-green-700 text-white"
-              onClick={() => onSolveProblem && onSolveProblem(post.id, solution)}
-            >
-              <Check size={16} className="mr-1" /> Submit Solution
-            </Button>
+          <div className="flex justify-end gap-2 mt-3">
+            {!post.isVerifying && !post.isVerified && (
+              <Button 
+                size="sm" 
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={handleVerifySolution}
+              >
+                <Code size={16} className="mr-1" /> Verify Solution
+              </Button>
+            )}
+            
+            {post.isVerifying && (
+              <Button 
+                size="sm" 
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                disabled
+              >
+                <div className="flex items-center">
+                  <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                  Verifying...
+                </div>
+              </Button>
+            )}
+            
+            {post.isVerified && (
+              <Button 
+                size="sm" 
+                className="bg-green-600 hover:bg-green-700 text-white"
+                onClick={() => onSolveProblem && onSolveProblem(post.id, solution)}
+              >
+                <Check size={16} className="mr-1" /> Submit Solution
+              </Button>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Show previous solutions if available */}
+      {post.type === 'problem' && post.solutions && post.solutions.length > 0 && !isEditing && (
+        <div className="mb-4">
+          <h4 className="text-sm font-medium text-white mb-2">Previous Solutions ({post.solutions.length})</h4>
+          <div className="space-y-2">
+            {post.solutions.map((sol, index) => (
+              <div key={index} className="p-3 rounded bg-codechatter-darker border border-codechatter-blue/20">
+                <pre className="text-xs text-white/80 font-mono overflow-x-auto whitespace-pre-wrap">
+                  {sol}
+                </pre>
+              </div>
+            ))}
           </div>
         </div>
       )}
@@ -351,6 +410,14 @@ const PostComponent: React.FC<PostProps> = ({
         <div className="mb-4 p-2 rounded bg-green-900/20 border border-green-500/20 flex items-center">
           <Check size={16} className="text-green-500 mr-2" />
           <span className="text-green-400 text-sm">Problem solved!</span>
+        </div>
+      )}
+
+      {/* Show verification status */}
+      {post.type === 'problem' && post.showSolutionInput && post.isVerified && !post.isSolved && !isEditing && (
+        <div className="mb-4 p-2 rounded bg-blue-900/20 border border-blue-500/20 flex items-center">
+          <Check size={16} className="text-blue-500 mr-2" />
+          <span className="text-blue-400 text-sm">Solution verified! You can submit now.</span>
         </div>
       )}
       

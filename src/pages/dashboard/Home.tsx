@@ -50,7 +50,26 @@ interface Post {
   isSolved?: boolean;
   solution?: string;
   showSolutionInput?: boolean;
+  isVerifying?: boolean;
+  isVerified?: boolean;
+  solutions?: string[];
 }
+
+// Simple function to simulate AI verification of code
+// In a real implementation, this would call an API or an edge function
+const verifyCodeSolution = async (problem: string, solution: string): Promise<boolean> => {
+  // This is a placeholder for a real AI verification
+  // In a real implementation, you would send the problem and solution to an AI model
+  console.log("Verifying solution for problem:", problem);
+  console.log("Solution provided:", solution);
+  
+  // Simulate network delay for verification
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  
+  // For demo purposes, let's approve all solutions that are longer than 10 characters
+  // In production, you would replace this with actual AI evaluation
+  return solution.length > 10;
+};
 
 const Home: React.FC = () => {
   const userData = useOutletContext<UserData>();
@@ -168,7 +187,10 @@ const Home: React.FC = () => {
       if (post.id === postId) {
         return {
           ...post,
-          showSolutionInput: !post.showSolutionInput
+          showSolutionInput: !post.showSolutionInput,
+          // Reset verification status when opening/closing the solution input
+          isVerified: false,
+          isVerifying: false
         };
       }
       return post;
@@ -180,23 +202,119 @@ const Home: React.FC = () => {
       if (post.id === postId) {
         return {
           ...post,
-          solution
+          solution,
+          // Reset verification status when the solution changes
+          isVerified: false
         };
       }
       return post;
     }));
   };
 
+  const handleVerifySolution = async (postId: string, solution: string) => {
+    // Set the post to verifying state
+    setPosts(posts.map(post => {
+      if (post.id === postId) {
+        return {
+          ...post,
+          isVerifying: true,
+          isVerified: false
+        };
+      }
+      return post;
+    }));
+    
+    try {
+      // Get the problem post
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
+      
+      // Verify the solution using our simulated AI function
+      const isValid = await verifyCodeSolution(post.content, solution);
+      
+      // Update the post with verification result
+      setPosts(posts.map(p => {
+        if (p.id === postId) {
+          return {
+            ...p,
+            isVerifying: false,
+            isVerified: isValid
+          };
+        }
+        return p;
+      }));
+      
+      // Show appropriate toast message
+      if (isValid) {
+        toast({
+          title: "Solution Verified",
+          description: "Your solution has been verified. You can now submit it!"
+        });
+      } else {
+        toast({
+          title: "Verification Failed",
+          description: "Your solution could not be verified. Please try again with a different approach.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Error verifying solution:", error);
+      
+      // Update the post state on error
+      setPosts(posts.map(p => {
+        if (p.id === postId) {
+          return {
+            ...p,
+            isVerifying: false,
+            isVerified: false
+          };
+        }
+        return p;
+      }));
+      
+      // Show error toast
+      toast({
+        title: "Verification Error",
+        description: "An error occurred while verifying your solution. Please try again later.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleSolveProblem = (postId: string, solution?: string) => {
     if (solution) {
+      // Find the post
+      const post = posts.find(p => p.id === postId);
+      if (!post) return;
+      
+      // If the solution isn't verified, we shouldn't allow submission
+      if (!post.isVerified) {
+        toast({
+          title: "Solution Not Verified",
+          description: "Please verify your solution before submitting.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       // Submit solution
       setPosts(posts.map(post => {
         if (post.id === postId) {
+          // Store the current solution in the solutions array
+          const existingSolutions = post.solutions || [];
+          const newSolutions = [...existingSolutions, solution];
+          
           return {
             ...post,
             isSolved: true,
-            solution,
-            showSolutionInput: false
+            solutions: newSolutions,
+            // Keep the solution input open for potential additional solutions
+            showSolutionInput: true,
+            // Reset the current solution after adding it to the solutions array
+            solution: '',
+            // Reset verification after submission
+            isVerified: false,
+            isVerifying: false
           };
         }
         return post;
@@ -204,7 +322,7 @@ const Home: React.FC = () => {
       
       toast({
         title: "Solution Submitted",
-        description: "You've successfully submitted your solution!"
+        description: "You've successfully submitted your solution! You can add more solutions if you'd like."
       });
     } else {
       // Toggle solution input area
@@ -258,6 +376,7 @@ const Home: React.FC = () => {
           onSolveProblem={handleSolveProblem}
           onToggleSolutionInput={handleToggleSolutionInput}
           onSolutionChange={handleSolutionChange}
+          onVerifySolution={handleVerifySolution}
         />
       </div>
     </div>
