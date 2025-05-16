@@ -32,12 +32,17 @@ const UserStats: React.FC<UserStatsProps> = ({ userId }) => {
             const points = solvedProblemsData.reduce((sum, problem) => sum + (problem.points || 0), 0);
             setTotalPoints(points);
             
-            // Fetch rank (this would be a more complex query in production)
-            const { data: rankData, error: rankError } = await supabase
-              .rpc('get_user_rank', { user_id: userId });
-              
-            if (!rankError && rankData) {
-              setGlobalRank(rankData.toString());
+            // Fetch rank - only if there are solved problems
+            if (solvedProblemsData.length > 0) {
+              const { data: rankData, error: rankError } = await supabase
+                .rpc('get_user_rank', { user_id: userId });
+                
+              if (!rankError && rankData !== null) {
+                setGlobalRank(String(rankData));
+              }
+            } else {
+              // Reset rank to default when no problems solved
+              setGlobalRank('--');
             }
             
             // For streak we would need a more complex calculation based on consecutive days
@@ -50,6 +55,27 @@ const UserStats: React.FC<UserStatsProps> = ({ userId }) => {
       };
       
       fetchUserStats();
+      
+      // Set up real-time subscription to update stats when problems are solved
+      const channel = supabase
+        .channel('solved_problems_changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'solved_problems',
+            filter: `user_id=eq.${userId}`
+          },
+          () => {
+            fetchUserStats();
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [userId]);
 
