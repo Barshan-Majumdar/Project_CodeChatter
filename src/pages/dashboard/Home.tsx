@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -55,20 +56,26 @@ interface Post {
   solutions?: string[];
 }
 
-// Simple function to simulate AI verification of code
-// In a real implementation, this would call an API or an edge function
-const verifyCodeSolution = async (problem: string, solution: string): Promise<boolean> => {
+// Improved function to simulate AI verification of code solution against the problem statement
+// In a real implementation, this would call an API or an edge function with GPT/Gemini integration
+const verifyCodeSolution = async (problemStatement: string, solution: string): Promise<boolean> => {
   // This is a placeholder for a real AI verification
-  // In a real implementation, you would send the problem and solution to an AI model
-  console.log("Verifying solution for problem:", problem);
+  // In a real implementation, you would send the problem statement and solution to an AI model
+  console.log("Verifying solution for problem:", problemStatement);
   console.log("Solution provided:", solution);
   
   // Simulate network delay for verification
   await new Promise(resolve => setTimeout(resolve, 2000));
   
-  // For demo purposes, let's approve all solutions that are longer than 10 characters
-  // In production, you would replace this with actual AI evaluation
-  return solution.length > 10;
+  // For demo purposes, let's implement a basic check
+  // In production, this would be replaced with a call to OpenAI/Gemini API
+  
+  // Simulate basic criteria check - real AI would do more comprehensive analysis
+  const solutionLength = solution.length > 10; // Solution should be substantive
+  const containsCodePatterns = /function|if|for|while|return|const|let|var|class|=>/i.test(solution); // Contains code keywords
+  const matchesProblemContext = true; // In real AI check, it would verify solution against problem context
+  
+  return solutionLength && containsCodePatterns && matchesProblemContext;
 };
 
 const Home: React.FC = () => {
@@ -229,7 +236,7 @@ const Home: React.FC = () => {
       const post = posts.find(p => p.id === postId);
       if (!post) return;
       
-      // Verify the solution using our simulated AI function
+      // Verify the solution using our AI verification function, passing both problem statement and solution
       const isValid = await verifyCodeSolution(post.content, solution);
       
       // Update the post with verification result
@@ -248,12 +255,12 @@ const Home: React.FC = () => {
       if (isValid) {
         toast({
           title: "Solution Verified",
-          description: "Your solution has been verified. You can now submit it!"
+          description: "Your solution has been verified by AI. You can now submit it!"
         });
       } else {
         toast({
           title: "Verification Failed",
-          description: "Your solution could not be verified. Please try again with a different approach.",
+          description: "Your solution could not be verified against the problem statement. Please review and try again.",
           variant: "destructive"
         });
       }

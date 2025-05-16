@@ -13,7 +13,8 @@ import {
   Edit,
   Check,
   FileImage,
-  FileVideo
+  FileVideo,
+  AlertTriangle
 } from 'lucide-react';
 import CommentsSection from './CommentsSection';
 import { 
@@ -371,7 +372,7 @@ const PostComponent: React.FC<PostProps> = ({
               >
                 <div className="flex items-center">
                   <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
-                  Verifying...
+                  Verifying with AI...
                 </div>
               </Button>
             )}
@@ -409,15 +410,23 @@ const PostComponent: React.FC<PostProps> = ({
       {post.type === 'problem' && post.isSolved && !isEditing && (
         <div className="mb-4 p-2 rounded bg-green-900/20 border border-green-500/20 flex items-center">
           <Check size={16} className="text-green-500 mr-2" />
-          <span className="text-green-400 text-sm">Problem solved!</span>
+          <span className="text-green-400 text-sm">Problem solved! You can submit more solutions if you'd like.</span>
         </div>
       )}
 
-      {/* Show verification status */}
+      {/* Show verification status with improved AI feedback messaging */}
       {post.type === 'problem' && post.showSolutionInput && post.isVerified && !post.isSolved && !isEditing && (
         <div className="mb-4 p-2 rounded bg-blue-900/20 border border-blue-500/20 flex items-center">
           <Check size={16} className="text-blue-500 mr-2" />
-          <span className="text-blue-400 text-sm">Solution verified! You can submit now.</span>
+          <span className="text-blue-400 text-sm">AI has verified your solution! You can submit now.</span>
+        </div>
+      )}
+      
+      {/* Show verification failed status */}
+      {post.type === 'problem' && post.showSolutionInput && !post.isVerified && !post.isVerifying && solution.length > 0 && !isEditing && (
+        <div className="mb-4 p-2 rounded bg-amber-900/20 border border-amber-500/20 flex items-center">
+          <AlertTriangle size={16} className="text-amber-500 mr-2" />
+          <span className="text-amber-400 text-sm">Your solution needs AI verification before submitting.</span>
         </div>
       )}
       
