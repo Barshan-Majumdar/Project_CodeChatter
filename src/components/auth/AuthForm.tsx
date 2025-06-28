@@ -90,7 +90,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
         });
         return;
       }
-      
+
       toast({
         title: "Account Created",
         description: "Welcome to CodeChatter!",
@@ -168,61 +168,35 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
     }
   };
 
-  const handleSocialSignIn = async (provider: string) => {
+  const handleSocialSignIn = async (provider: 'github' | 'google' | 'azure') => {
     // Prevent multiple clicks while processing
     if (socialLoginInProgress) {
       return;
     }
     
-    setSocialLoginInProgress(provider.toLowerCase());
+    setSocialLoginInProgress(provider);
     setIsLoading(true);
     
     try {
-      const redirectURL = window.location.origin + '/dashboard/home';
+      const redirectURL = `${window.location.origin}/dashboard/home`;
       
       toast({
-        title: `Signing in with ${provider}`,
-        description: "Connecting to authentication provider...",
+        title: `Signing in with ${provider === 'azure' ? 'Microsoft' : provider}`,
+        description: "Redirecting to authentication provider...",
       });
 
-      let result;
-      
-      // Handle different social providers
-      switch (provider.toLowerCase()) {
-        case 'github':
-          result = await supabase.auth.signInWithOAuth({
-            provider: 'github',
-            options: {
-              redirectTo: redirectURL
-            }
-          });
-          break;
-        case 'google':
-          result = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-              redirectTo: redirectURL
-            }
-          });
-          break;
-        case 'microsoft':
-          result = await supabase.auth.signInWithOAuth({
-            provider: 'azure',
-            options: {
-              redirectTo: redirectURL
-            }
-          });
-          break;
-        default:
-          throw new Error(`Unsupported provider: ${provider}`);
-      }
-      
-      const { error } = result;
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: provider,
+        options: {
+          redirectTo: redirectURL,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        }
+      });
       
       if (error) {
-        if (error.message.includes('provider is not enabled')) {
-          throw new Error(`The ${provider} authentication provider is not enabled in your Supabase project. Please configure it in the Supabase dashboard under Authentication > Providers.`);
-        }
         throw error;
       }
       
@@ -230,11 +204,21 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
       // No need to clear states as the page will redirect
     } catch (error: any) {
       console.error("OAuth error:", error);
+      
+      let errorMessage = `Failed to sign in with ${provider === 'azure' ? 'Microsoft' : provider}.`;
+      
+      if (error.message?.includes('provider is not enabled')) {
+        errorMessage = `${provider === 'azure' ? 'Microsoft' : provider} authentication is not enabled. Please contact support.`;
+      } else if (error.message?.includes('Invalid login credentials')) {
+        errorMessage = "Authentication was cancelled or failed. Please try again.";
+      }
+      
       toast({
         title: "Authentication Error",
-        description: error.message || `Failed to sign in with ${provider}.`,
+        description: errorMessage,
         variant: "destructive"
       });
+      
       setIsLoading(false);
       setSocialLoginInProgress('');
     }
@@ -313,18 +297,20 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
 
               <div className="grid grid-cols-3 gap-3 w-full">
                 <Button 
+                  type="button"
                   variant="outline"
                   className="bg-codechatter-darker border-codechatter-blue/20 hover:bg-codechatter-blue/10"
-                  onClick={() => handleSocialSignIn("GitHub")}
+                  onClick={() => handleSocialSignIn("github")}
                   disabled={isLoading}
                 >
                   <Github className="mr-2" size={16} />
                   {socialLoginInProgress === 'github' ? '...' : 'GitHub'}
                 </Button>
                 <Button 
+                  type="button"
                   variant="outline"
                   className="bg-codechatter-darker border-codechatter-blue/20 hover:bg-codechatter-blue/10"
-                  onClick={() => handleSocialSignIn("Google")}
+                  onClick={() => handleSocialSignIn("google")}
                   disabled={isLoading}
                 >
                   <svg className="mr-2" width="16" height="16" viewBox="0 0 24 24">
@@ -348,9 +334,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
                   {socialLoginInProgress === 'google' ? '...' : 'Google'}
                 </Button>
                 <Button 
+                  type="button"
                   variant="outline"
                   className="bg-codechatter-darker border-codechatter-blue/20 hover:bg-codechatter-blue/10"
-                  onClick={() => handleSocialSignIn("Microsoft")}
+                  onClick={() => handleSocialSignIn("azure")}
                   disabled={isLoading}
                 >
                   <svg className="mr-2" width="16" height="16" viewBox="0 0 23 23">
@@ -360,7 +347,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
                     <path fill="#05a6f0" d="M1 12h10v10H1z" />
                     <path fill="#ffba08" d="M12 12h10v10H12z" />
                   </svg>
-                  {socialLoginInProgress === 'microsoft' ? '...' : 'MS'}
+                  {socialLoginInProgress === 'azure' ? '...' : 'MS'}
                 </Button>
               </div>
             </CardFooter>
@@ -463,18 +450,20 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
 
               <div className="grid grid-cols-3 gap-3 w-full">
                 <Button 
+                  type="button"
                   variant="outline"
                   className="bg-codechatter-darker border-codechatter-blue/20 hover:bg-codechatter-blue/10"
-                  onClick={() => handleSocialSignIn("GitHub")}
+                  onClick={() => handleSocialSignIn("github")}
                   disabled={isLoading}
                 >
                   <Github className="mr-2" size={16} />
                   {socialLoginInProgress === 'github' ? '...' : 'GitHub'}
                 </Button>
                 <Button 
+                  type="button"
                   variant="outline"
                   className="bg-codechatter-darker border-codechatter-blue/20 hover:bg-codechatter-blue/10"
-                  onClick={() => handleSocialSignIn("Google")}
+                  onClick={() => handleSocialSignIn("google")}
                   disabled={isLoading}
                 >
                   <svg className="mr-2" width="16" height="16" viewBox="0 0 24 24">
@@ -498,9 +487,10 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
                   {socialLoginInProgress === 'google' ? '...' : 'Google'}
                 </Button>
                 <Button 
+                  type="button"
                   variant="outline"
                   className="bg-codechatter-darker border-codechatter-blue/20 hover:bg-codechatter-blue/10"
-                  onClick={() => handleSocialSignIn("Microsoft")}
+                  onClick={() => handleSocialSignIn("azure")}
                   disabled={isLoading}
                 >
                   <svg className="mr-2" width="16" height="16" viewBox="0 0 23 23">
@@ -510,7 +500,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
                     <path fill="#05a6f0" d="M1 12h10v10H1z" />
                     <path fill="#ffba08" d="M12 12h10v10H12z" />
                   </svg>
-                  {socialLoginInProgress === 'microsoft' ? '...' : 'MS'}
+                  {socialLoginInProgress === 'azure' ? '...' : 'MS'}
                 </Button>
               </div>
               
