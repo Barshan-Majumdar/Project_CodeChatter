@@ -30,7 +30,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
   
   // Loading state
   const [isLoading, setIsLoading] = useState(false);
-  const [socialLoginInProgress, setSocialLoginInProgress] = useState('');
+  const [socialLoginInProgress, setSocialLoginInProgress] = useState<'github' | 'google' | 'azure' | ''>('');
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
