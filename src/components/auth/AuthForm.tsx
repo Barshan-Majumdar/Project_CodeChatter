@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -74,6 +73,7 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
         options: {
           data: {
             full_name: signUpName,
+            username: signUpEmail.split('@')[0], // Default username from email
           },
         },
       });
@@ -91,16 +91,6 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
         return;
       }
       
-      // Store user data in localStorage for the dashboard
-      if (data.user) {
-        const userData = { name: signUpName, email: signUpEmail };
-        localStorage.setItem('user-data', JSON.stringify(userData));
-        
-        if (data.session?.access_token) {
-          localStorage.setItem('auth-token', data.session.access_token);
-        }
-      }
-
       toast({
         title: "Account Created",
         description: "Welcome to CodeChatter!",
@@ -151,16 +141,8 @@ const AuthForm: React.FC<AuthFormProps> = ({ onSuccess, defaultTab = 'sign-in' }
       }
 
       if (data.user) {
-        // Get user data from metadata
+        // Get user data from metadata or profile
         const fullName = data.user.user_metadata?.full_name || signInEmail.split('@')[0];
-
-        // Store user data for the dashboard
-        const userData = { name: fullName, email: signInEmail };
-        localStorage.setItem('user-data', JSON.stringify(userData));
-        
-        if (data.session?.access_token) {
-          localStorage.setItem('auth-token', data.session.access_token);
-        }
         
         toast({
           title: "Signed In",
