@@ -1,12 +1,5 @@
-
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import ProblemCard from '@/components/dashboard/ProblemCard';
-import ActivityFeed from '@/components/dashboard/ActivityFeed';
-import LeaderboardTable from '@/components/dashboard/LeaderboardTable';
-import ChatBox from '@/components/dashboard/ChatBox';
-import { Button } from '@/components/ui/button';
-import { Code } from 'lucide-react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
